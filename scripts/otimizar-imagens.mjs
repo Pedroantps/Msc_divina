@@ -27,10 +27,21 @@ export function paraKebab(base) {
     .replace(/^-+|-+$/g, '')
 }
 
-async function otimizar(arquivo, tipo, config) {
+// Retorna 'ok', 'acima' (passou do limite) ou 'ignorado' (nome vazio ou colisão).
+async function otimizar(arquivo, tipo, config, gravados) {
   const base = path.basename(arquivo, path.extname(arquivo))
-  const nome = `${paraKebab(base)}.webp`
+  const kebab = paraKebab(base)
+  if (!kebab) {
+    console.warn(`AVISO: ${tipo}/${arquivo} ignorado: o nome não tem letras nem números`)
+    return 'ignorado'
+  }
+  const nome = `${kebab}.webp`
   const destino = path.join(SAIDA, tipo, nome)
+  if (gravados.has(destino)) {
+    console.warn(`AVISO: ${tipo}/${arquivo} ignorado: gera ${nome}, que já veio de ${tipo}/${gravados.get(destino)}`)
+    return 'ignorado'
+  }
+  gravados.set(destino, arquivo)
   const original = path.join(ENTRADA, tipo, arquivo)
 
   let melhor
@@ -40,15 +51,16 @@ async function otimizar(arquivo, tipo, config) {
     if (melhor.length <= config.limite) break
   }
   if (qualidade < 50) qualidade = 50
+  const existia = existsSync(destino)
   await writeFile(destino, melhor)
 
   const kb = (melhor.length / 1024).toFixed(0)
-  console.log(`${tipo}/${nome}  ${kb} KB  qualidade ${qualidade}`)
+  console.log(`${tipo}/${nome}  ${kb} KB  qualidade ${qualidade}${existia ? '  (sobrescreveu)' : ''}`)
   if (melhor.length > config.limite) {
     console.warn(`AVISO: ${tipo}/${nome} ficou com ${kb} KB, acima do limite de ${(config.limite / 1024).toFixed(0)} KB`)
-    return false
+    return 'acima'
   }
-  return true
+  return 'ok'
 }
 
 async function main() {
@@ -58,22 +70,26 @@ async function main() {
   }
   let total = 0
   let acima = 0
+  let ignorados = 0
+  const gravados = new Map()
   let erros = 0
   for (const [tipo, config] of Object.entries(TIPOS)) {
     const pasta = path.join(ENTRADA, tipo)
     if (!existsSync(pasta)) continue
     await mkdir(path.join(SAIDA, tipo), { recursive: true })
-    for (const arquivo of (await readdir(pasta)).filter((f) => EXTENSOES.test(f))) {
+    for (const arquivo of (await readdir(pasta)).filter((f) => EXTENSOES.test(f)).sort()) {
       try {
         total++
-        if (!(await otimizar(arquivo, tipo, config))) acima++
+        const r = await otimizar(arquivo, tipo, config, gravados)
+        if (r === 'acima') acima++
+        if (r === 'ignorado') ignorados++
       } catch (e) {
         erros++
         console.warn(`AVISO: não consegui processar ${tipo}/${arquivo}: ${e.message}`)
       }
     }
   }
-  console.log(`\n${total} arquivo(s): ${total - acima - erros} dentro do limite, ${acima} acima, ${erros} com erro.`)
+  console.log(`\n${total} arquivo(s): ${total - acima - erros - ignorados} dentro do limite, ${acima} acima, ${ignorados} ignorado(s), ${erros} com erro.`)
 }
 
 main()
