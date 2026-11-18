@@ -86,6 +86,9 @@ async function main() {
       } catch (e) {
         erros++
         console.warn(`AVISO: não consegui processar ${tipo}/${arquivo}: ${e.message}`)
+        if (/\.heic$/i.test(arquivo)) {
+          console.warn('  Dica: o sharp costuma não ler HEIC. Exporte a foto como JPG e rode de novo.')
+        }
       }
     }
   }

@@ -59,11 +59,14 @@
 
 .favoritos__miniatura img,
 .favoritos__miniatura .imagem-fallback {
-  display: flex;
   width: 100%;
   height: 100%;
-  padding: 0.5rem;
   object-fit: cover;
+}
+
+.favoritos__miniatura .imagem-fallback {
+  display: flex;
+  padding: 0.5rem;
   font-size: 0.9rem;
 }
 

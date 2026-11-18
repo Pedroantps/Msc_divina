@@ -9,3 +9,8 @@
   font-size: clamp(1.5rem, 7vw, 2.5rem);
   text-align: center;
 }
+
+/* Mais específico que .area__img / .hero__img (display:block), para manter o texto centralizado. */
+.imagem-fallback[data-fallback] {
+  display: flex;
+}
