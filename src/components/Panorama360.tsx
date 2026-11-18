@@ -30,37 +30,54 @@ interface Panorama360Props {
   panorama: string
   imagemPlana: string
   alt: string
+  /** Id do elemento observado no lugar do próprio (ex.: a seção da área). */
+  ancora?: string
 }
 
-export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
+export function Panorama360({ panorama, imagemPlana, alt, ancora }: Panorama360Props) {
   const raiz = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
+  const falhou = useRef(false)
   const [visivel, setVisivel] = useState(false)
   const [ativo, setAtivo] = useState(false)
   const [dicaVisivel, setDicaVisivel] = useState(true)
   const textoDica = telaDeToque() ? 'Use dois dedos para olhar em volta' : 'Arraste para olhar em volta'
 
+  // Liga quando o âncora chega a 200px da tela; desliga quando sai por inteiro
+  // de uma folga de 1 tela. Assim só os viewers das áreas próximas ficam vivos.
   useEffect(() => {
-    const el = raiz.current
+    const el = (ancora ? document.getElementById(ancora) : null) ?? raiz.current
     if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
+    const entrar = new IntersectionObserver(
       (entradas) => {
-        if (entradas.some((e) => e.isIntersecting)) {
-          setVisivel(true)
-          obs.disconnect()
-        }
+        if (entradas.some((e) => e.isIntersecting)) setVisivel(true)
       },
       { rootMargin: '200px' },
     )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+    const sair = new IntersectionObserver(
+      (entradas) => {
+        if (entradas.length > 0 && entradas.every((e) => !e.isIntersecting)) setVisivel(false)
+      },
+      { rootMargin: '100% 0px' },
+    )
+    entrar.observe(el)
+    sair.observe(el)
+    return () => {
+      entrar.disconnect()
+      sair.disconnect()
+    }
+  }, [ancora])
 
   useEffect(() => {
-    if (!visivel || !suportaWebGL()) return
+    if (!visivel) {
+      setAtivo(false)
+      return
+    }
+    if (falhou.current || !suportaWebGL()) return
     let cancelado = false
     let viewer: { destroy: () => void } | null = null
     const desistir = () => {
+      falhou.current = true
       viewer?.destroy()
       viewer = null
       setAtivo(false)
@@ -90,6 +107,12 @@ export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
         v.addEventListener('panorama-error', () => {
           if (!cancelado) desistir()
         })
+        // Memória de GPU esgotada em celular fraco: volta para a foto plana.
+        container.current
+          .querySelector('canvas')
+          ?.addEventListener('webglcontextlost', () => {
+            if (!cancelado) desistir()
+          })
       } catch {
         if (!cancelado) desistir()
       }
@@ -107,6 +130,8 @@ export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
       {ativo ? (
         <div
           className="panorama__viewer-area"
+          role="group"
+          aria-label={alt}
           onPointerDown={() => setDicaVisivel(false)}
           onTouchStart={() => setDicaVisivel(false)}
         >

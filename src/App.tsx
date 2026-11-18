@@ -15,7 +15,7 @@ export default function App() {
         aposHero
         areas={areasDoNavio}
         renderMidia={(a) =>
-          a.panorama ? <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} /> : undefined
+          a.panorama ? <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} ancora={a.id} /> : undefined
         }
       />
       <Buzios lugares={lugaresBuzios} />
