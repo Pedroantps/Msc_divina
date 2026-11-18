@@ -3,6 +3,13 @@
   background: var(--cor-fundo);
 }
 
+.hero:not([data-estatico='true']) {
+  /* Fica por cima das áreas (que sobem por baixo dele) e não captura cliques. */
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .hero[data-estatico='true'] {
   height: 100svh;
 }

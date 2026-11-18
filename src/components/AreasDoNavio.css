@@ -3,6 +3,16 @@
   background: var(--cor-fundo);
 }
 
+/*
+ * Sobreposição com o fim do Hero (300svh, fade em 85%-100% do trecho de 200svh,
+ * ou seja, scroll 170svh-200svh). O topo de .areas sobe 130svh para ficar em
+ * 170svh do documento: o palco já está fixo (sticky) preenchendo a tela quando o
+ * fade começa, e o fade revela a primeira área direto.
+ */
+.areas:not([data-estatico='true']) {
+  margin-top: -130svh;
+}
+
 .areas__palco {
   position: sticky;
   top: 0;
@@ -27,6 +37,14 @@
   margin-top: -100svh;
 }
 
+.areas__secoes {
+  pointer-events: none;
+}
+
 .areas__secoes .area {
   background: transparent;
+}
+
+.areas__secoes .area__texto {
+  pointer-events: auto;
 }
