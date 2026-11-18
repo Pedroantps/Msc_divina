@@ -3,6 +3,29 @@ import { suportaWebGL } from '../lib/suportaWebGL'
 import { ImagemComFallback } from './ImagemComFallback'
 import './Panorama360.css'
 
+const LANG_PT = {
+  zoom: 'Zoom',
+  zoomOut: 'Diminuir zoom',
+  zoomIn: 'Aumentar zoom',
+  moveUp: 'Mover para cima',
+  moveDown: 'Mover para baixo',
+  moveLeft: 'Mover para a esquerda',
+  moveRight: 'Mover para a direita',
+  description: 'Descrição',
+  download: 'Baixar',
+  fullscreen: 'Tela cheia',
+  loading: 'Carregando...',
+  menu: 'Menu',
+  close: 'Fechar',
+  twoFingers: 'Use dois dedos para olhar em volta',
+  ctrlZoom: 'Use ctrl + rolagem para aproximar a imagem',
+  loadError: 'Não foi possível carregar o panorama',
+  webglError: 'Seu navegador não parece oferecer suporte a WebGL',
+}
+
+const telaDeToque = () =>
+  typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
+
 interface Panorama360Props {
   panorama: string
   imagemPlana: string
@@ -15,6 +38,7 @@ export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
   const [visivel, setVisivel] = useState(false)
   const [ativo, setAtivo] = useState(false)
   const [dicaVisivel, setDicaVisivel] = useState(true)
+  const textoDica = telaDeToque() ? 'Use dois dedos para olhar em volta' : 'Arraste para olhar em volta'
 
   useEffect(() => {
     const el = raiz.current
@@ -58,6 +82,8 @@ export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
           panorama,
           navbar: false,
           touchmoveTwoFingers: true,
+          mousewheelCtrlKey: true,
+          lang: LANG_PT,
           defaultZoomLvl: 0,
         })
         viewer = v
@@ -87,7 +113,7 @@ export function Panorama360({ panorama, imagemPlana, alt }: Panorama360Props) {
           <div ref={container} className="panorama__viewer" />
           {dicaVisivel && (
             <p className="panorama__dica">
-              <span>Arraste para olhar em volta</span>
+              <span>{textoDica}</span>
             </p>
           )}
         </div>

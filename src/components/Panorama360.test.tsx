@@ -64,7 +64,14 @@ it('cria o viewer quando entra na tela e mostra a dica', async () => {
         panorama: '/pano/piscina.webp',
         navbar: false,
         touchmoveTwoFingers: true,
+        mousewheelCtrlKey: true,
         defaultZoomLvl: 0,
+        lang: expect.objectContaining({
+          twoFingers: 'Use dois dedos para olhar em volta',
+          ctrlZoom: expect.stringContaining('ctrl'),
+          loadError: 'Não foi possível carregar o panorama',
+          webglError: expect.stringContaining('WebGL'),
+        }),
       }),
     ),
   )
@@ -72,6 +79,18 @@ it('cria o viewer quando entra na tela e mostra a dica', async () => {
   const dica = await screen.findByText('Arraste para olhar em volta')
   fireEvent.pointerDown(dica.parentElement!)
   expect(screen.queryByText('Arraste para olhar em volta')).not.toBeInTheDocument()
+})
+
+it('em tela de toque a dica fala em dois dedos', async () => {
+  const mm = window.matchMedia
+  window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)' })) as unknown as typeof window.matchMedia
+  try {
+    montar()
+    entrar()
+    expect(await screen.findByText('Use dois dedos para olhar em volta')).toBeInTheDocument()
+  } finally {
+    window.matchMedia = mm
+  }
 })
 
 it('sem WebGL fica na foto plana', async () => {
