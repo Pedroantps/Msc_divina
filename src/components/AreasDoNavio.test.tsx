@@ -55,9 +55,9 @@ it('sem movimento reduzido cria um tween com scrollTrigger por camada após a pr
   expect(espiao).toHaveBeenCalledTimes(areasDoNavio.length - 1)
   expect(espiao).toHaveBeenCalledWith(
     expect.anything(),
-    { opacity: 0 },
+    { autoAlpha: 0 },
     expect.objectContaining({
-      opacity: 1,
+      autoAlpha: 1,
       scrollTrigger: expect.objectContaining({ scrub: true }),
     }),
   )

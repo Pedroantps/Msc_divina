@@ -12,3 +12,15 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     dispatchEvent: () => false,
   })
 }
+
+if (typeof window !== 'undefined' && typeof window.IntersectionObserver === 'undefined') {
+  class IntersectionObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return []
+    }
+  }
+  window.IntersectionObserver = IntersectionObserverStub as unknown as typeof IntersectionObserver
+}

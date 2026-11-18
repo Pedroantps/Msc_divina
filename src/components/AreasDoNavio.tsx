@@ -27,9 +27,9 @@ export function AreasDoNavio({ areas, renderMidia }: AreasDoNavioProps) {
         if (i === 0) return
         gsap.fromTo(
           camada,
-          { opacity: 0 },
+          { autoAlpha: 0 },
           {
-            opacity: 1,
+            autoAlpha: 1,
             ease: 'none',
             scrollTrigger: {
               trigger: secoes[i],
