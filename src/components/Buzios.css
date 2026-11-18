@@ -1,0 +1,56 @@
+.buzios {
+  position: relative;
+  z-index: 2;
+  background: var(--cor-fundo-buzios);
+}
+
+.buzios__abertura {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--cor-fundo-buzios);
+}
+
+.buzios__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.buzios__texto {
+  position: relative;
+  width: 100%;
+  padding: 4rem 1.5rem 3rem;
+  background: linear-gradient(to top, var(--cor-sombra), transparent);
+}
+
+.buzios__titulo {
+  margin: 0 0 0.75rem;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2.25rem, 9vw, 4rem);
+  line-height: 1.05;
+  color: var(--cor-texto);
+}
+
+.buzios__aviso {
+  margin: 0;
+  font-family: var(--fonte-texto);
+  font-size: 1rem;
+  color: var(--cor-destaque);
+}
+
+.buzios .areas {
+  background: var(--cor-fundo-buzios);
+}
+
+.buzios .area {
+  background: var(--cor-fundo-buzios);
+}
+
+.buzios .areas__secoes .area {
+  background: transparent;
+}

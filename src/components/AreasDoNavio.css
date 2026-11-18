@@ -9,7 +9,7 @@
  * 170svh do documento: o palco já está fixo (sticky) preenchendo a tela quando o
  * fade começa, e o fade revela a primeira área direto.
  */
-.areas:not([data-estatico='true']) {
+.areas[data-apos-hero='true']:not([data-estatico='true']) {
   margin-top: -130svh;
 }
 

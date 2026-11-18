@@ -9,9 +9,11 @@ import './AreasDoNavio.css'
 interface AreasDoNavioProps {
   areas: Area[]
   renderMidia?: (area: Area) => ReactNode
+  /** Marca a instância que vem logo após o Hero e deve sobrepor o fim dele. */
+  aposHero?: boolean
 }
 
-export function AreasDoNavio({ areas, renderMidia }: AreasDoNavioProps) {
+export function AreasDoNavio({ areas, renderMidia, aposHero }: AreasDoNavioProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const reduzido = useReducedMotion()
 
@@ -49,6 +51,7 @@ export function AreasDoNavio({ areas, renderMidia }: AreasDoNavioProps) {
       ref={containerRef}
       className="areas"
       data-estatico={reduzido ? 'true' : undefined}
+      data-apos-hero={aposHero ? 'true' : undefined}
     >
       {!reduzido && (
         <div className="areas__palco">
