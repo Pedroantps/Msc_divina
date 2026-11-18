@@ -23,14 +23,14 @@ afterEach(() => {
   window.matchMedia = original
 })
 
-it('mostra o título e a foto com texto alternativo', () => {
+it('mostra o tÃ­tulo e a foto com texto alternativo', () => {
   mockMatchMedia(false)
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
   expect(screen.getByRole('heading', { level: 1, name: 'MSC Divina' })).toBeInTheDocument()
   expect(screen.getByRole('img', { name: 'O navio MSC Divina visto de fora' })).toBeInTheDocument()
 })
 
-it('com movimento reduzido marca a seção como estática', () => {
+it('com movimento reduzido marca a seÃ§Ã£o como estÃ¡tica', () => {
   mockMatchMedia(true)
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
   expect(screen.getByTestId('hero')).toHaveAttribute('data-estatico', 'true')
@@ -53,7 +53,7 @@ it('sem movimento reduzido cria a timeline com scrollTrigger', () => {
   )
 })
 
-it('com movimento reduzido n�o cria timeline', () => {
+it('com movimento reduzido não cria timeline', () => {
   mockMatchMedia(true)
   const espiao = vi.spyOn(gsap, 'timeline')
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
