@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { ImagemComFallback } from './ImagemComFallback'
 import './Hero.css'
 
 interface HeroProps {
@@ -40,11 +41,10 @@ export function Hero({ imagem, alvo }: HeroProps) {
       data-estatico={reduzido ? 'true' : undefined}
     >
       <div className="hero__palco">
-        <img
+        <ImagemComFallback
           className="hero__img"
           src={imagem}
           alt="O navio MSC Divina visto de fora"
-          style={{ transformOrigin: `${alvo.x}% ${alvo.y}%` }}
         />
         <div className="hero__degrade">
           <h1 className="hero__titulo">MSC Divina</h1>

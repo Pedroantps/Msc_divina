@@ -1,0 +1,11 @@
+.imagem-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--cor-fundo-claro);
+  color: var(--cor-texto);
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.5rem, 7vw, 2.5rem);
+  text-align: center;
+}

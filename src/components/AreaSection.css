@@ -1,0 +1,51 @@
+.area {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 100svh;
+  background: var(--cor-fundo);
+}
+
+.area__midia {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.area__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.area__texto {
+  position: relative;
+  width: 100%;
+  padding: 4rem 1.5rem 3rem;
+  background: linear-gradient(to top, var(--cor-sombra), transparent);
+  color: var(--cor-texto);
+}
+
+.area__deck {
+  margin: 0 0 0.5rem;
+  font-family: var(--fonte-texto);
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cor-destaque);
+}
+
+.area__titulo {
+  margin: 0 0 0.75rem;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2rem, 9vw, 3.5rem);
+}
+
+.area__descricao {
+  margin: 0;
+  max-width: 32rem;
+  font-family: var(--fonte-texto);
+  font-size: 1rem;
+  line-height: 1.5;
+}

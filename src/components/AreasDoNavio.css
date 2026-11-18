@@ -1,0 +1,32 @@
+.areas {
+  position: relative;
+  background: var(--cor-fundo);
+}
+
+.areas__palco {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.areas__camada {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
+
+.areas__camada > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Sobe as seções por cima do palco sticky (que ocupa 100svh no fluxo). */
+.areas__secoes {
+  position: relative;
+  margin-top: -100svh;
+}
+
+.areas__secoes .area {
+  background: transparent;
+}
