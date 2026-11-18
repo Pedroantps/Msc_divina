@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import type { Area } from '../data/tipos'
@@ -16,6 +16,24 @@ interface AreasDoNavioProps {
 export function AreasDoNavio({ areas, renderMidia, aposHero }: AreasDoNavioProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const reduzido = useReducedMotion()
+  // Sem IntersectionObserver a mídia do palco monta logo; com ele, só perto da tela.
+  const [perto, setPerto] = useState(() => typeof IntersectionObserver === 'undefined')
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (reduzido || perto || !el || typeof IntersectionObserver === 'undefined') return
+    const obs = new IntersectionObserver(
+      (entradas) => {
+        if (entradas.some((e) => e.isIntersecting)) {
+          setPerto(true)
+          obs.disconnect()
+        }
+      },
+      { rootMargin: '100% 0px' },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [reduzido, perto])
 
   const midiaDe = (area: Area): ReactNode =>
     renderMidia?.(area) ?? <ImagemComFallback className="area__img" src={area.imagem} alt={area.nome} />
@@ -57,7 +75,7 @@ export function AreasDoNavio({ areas, renderMidia, aposHero }: AreasDoNavioProps
         <div className="areas__palco">
           {areas.map((area) => (
             <div key={area.id} className="areas__camada">
-              {midiaDe(area)}
+              {perto && midiaDe(area)}
             </div>
           ))}
         </div>

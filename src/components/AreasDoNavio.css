@@ -23,6 +23,7 @@
 .areas__camada {
   position: absolute;
   inset: 0;
+  background: var(--cor-fundo);
   will-change: opacity;
 }
 
