@@ -70,3 +70,13 @@ it('o zoom anima um wrapper estável que continua no documento quando a foto fal
   expect(alvoZoom.isConnected).toBe(true)
   expect(alvoZoom.contains(screen.getByRole('img'))).toBe(true)
 })
+
+it('carrega a imagem do hero com prioridade alta, sem aviso do React', () => {
+  mockMatchMedia(false)
+  const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+  render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
+  const img = screen.getByRole('img', { name: 'O navio MSC Divina visto de fora' })
+  expect(img).toHaveAttribute('loading', 'eager')
+  expect(img).toHaveAttribute('fetchpriority', 'high')
+  expect(erro).not.toHaveBeenCalled()
+})

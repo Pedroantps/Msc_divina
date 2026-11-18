@@ -23,3 +23,19 @@ it('repassa a className para a imagem e para o fallback', () => {
   fireEvent.error(screen.getByRole('img'))
   expect(screen.getByRole('img')).toHaveClass('x')
 })
+
+it('carrega de forma preguiçosa e assíncrona por padrão', () => {
+  render(<ImagemComFallback src="/a.webp" alt="Teatro" />)
+  const img = screen.getByRole('img')
+  expect(img).toHaveAttribute('loading', 'lazy')
+  expect(img).toHaveAttribute('decoding', 'async')
+  expect(img).not.toHaveAttribute('fetchpriority')
+})
+
+it('aceita sobrescrever loading, decoding e fetchpriority', () => {
+  render(<ImagemComFallback src="/a.webp" alt="Teatro" loading="eager" decoding="auto" fetchpriority="high" />)
+  const img = screen.getByRole('img')
+  expect(img).toHaveAttribute('loading', 'eager')
+  expect(img).toHaveAttribute('decoding', 'auto')
+  expect(img).toHaveAttribute('fetchpriority', 'high')
+})

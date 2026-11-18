@@ -46,6 +46,8 @@ export function Hero({ imagem, alvo }: HeroProps) {
             className="hero__img"
             src={imagem}
             alt="O navio MSC Divina visto de fora"
+            loading="eager"
+            fetchpriority="high"
           />
         </div>
         <div className="hero__degrade">

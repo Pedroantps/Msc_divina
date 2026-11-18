@@ -1,0 +1,27 @@
+.rodape {
+  padding: 2.5rem 1rem calc(2.5rem + env(safe-area-inset-bottom));
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte-texto);
+  font-size: 0.875rem;
+}
+
+.rodape__titulo {
+  margin: 0 0 0.75rem;
+  font-family: var(--fonte-titulo);
+  font-size: 1.25rem;
+}
+
+.rodape__lista {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.rodape__tour {
+  margin: 0;
+}
+
+.rodape a {
+  color: var(--cor-destaque);
+}

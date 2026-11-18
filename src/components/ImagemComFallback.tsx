@@ -5,9 +5,20 @@ interface ImagemComFallbackProps {
   src: string
   alt: string
   className?: string
+  loading?: 'lazy' | 'eager'
+  decoding?: 'async' | 'sync' | 'auto'
+  /** Atributo DOM em minúsculas: o React 18 não conhece `fetchPriority`. */
+  fetchpriority?: 'high' | 'low' | 'auto'
 }
 
-export function ImagemComFallback({ src, alt, className }: ImagemComFallbackProps) {
+export function ImagemComFallback({
+  src,
+  alt,
+  className,
+  loading = 'lazy',
+  decoding = 'async',
+  fetchpriority,
+}: ImagemComFallbackProps) {
   const [falhou, setFalhou] = useState(false)
 
   useEffect(() => {
@@ -27,5 +38,18 @@ export function ImagemComFallback({ src, alt, className }: ImagemComFallbackProp
     )
   }
 
-  return <img className={className} src={src} alt={alt} onError={() => setFalhou(true)} />
+  // React 18 avisa com `fetchPriority`; o atributo minúsculo passa direto ao DOM.
+  const extras = fetchpriority ? { fetchpriority } : {}
+
+  return (
+    <img
+      className={className}
+      src={src}
+      alt={alt}
+      loading={loading}
+      decoding={decoding}
+      {...extras}
+      onError={() => setFalhou(true)}
+    />
+  )
 }
