@@ -1,0 +1,7 @@
+node_modules/
+dist/
+fotos-originais/
+.superpowers/
+.vercel/
+.claude/settings.local.json
+*.local
