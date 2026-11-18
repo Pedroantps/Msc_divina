@@ -6,21 +6,29 @@ import { SelecaoFavoritos } from './components/SelecaoFavoritos'
 import { Rodape } from './components/Rodape'
 import { areasDoNavio } from './data/areas'
 import { lugaresBuzios } from './data/buzios'
+import { capas } from './data/capas'
 
 export default function App() {
   return (
-    <main>
-      <Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />
-      <AreasDoNavio
-        aposHero
-        areas={areasDoNavio}
-        renderMidia={(a) =>
-          a.panorama ? <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} ancora={a.id} /> : undefined
-        }
+    <>
+      <main>
+        <Hero imagem={capas.navio.imagem} alt={capas.navio.alt} alvo={{ x: 62, y: 48 }} />
+        <AreasDoNavio
+          aposHero
+          areas={areasDoNavio}
+          renderMidia={(a) =>
+            a.panorama ? (
+              <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} ancora={a.id} />
+            ) : undefined
+          }
+        />
+        <Buzios lugares={lugaresBuzios} />
+        <SelecaoFavoritos areas={[...areasDoNavio, ...lugaresBuzios]} />
+      </main>
+      <Rodape
+        areas={[...areasDoNavio, ...lugaresBuzios]}
+        creditosExtras={[capas.navio.credito, capas.buzios.credito]}
       />
-      <Buzios lugares={lugaresBuzios} />
-      <SelecaoFavoritos areas={[...areasDoNavio, ...lugaresBuzios]} />
-      <Rodape areas={[...areasDoNavio, ...lugaresBuzios]} />
-    </main>
+    </>
   )
 }

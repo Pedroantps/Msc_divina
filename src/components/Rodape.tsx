@@ -3,10 +3,12 @@ import './Rodape.css'
 
 interface RodapeProps {
   areas: Area[]
+  /** Créditos de fotos que não pertencem a uma área (capas). */
+  creditosExtras?: string[]
 }
 
-export function Rodape({ areas }: RodapeProps) {
-  const creditos = [...new Set(areas.map((a) => a.credito))]
+export function Rodape({ areas, creditosExtras = [] }: RodapeProps) {
+  const creditos = [...new Set([...areas.map((a) => a.credito), ...creditosExtras])]
 
   return (
     <footer className="rodape">

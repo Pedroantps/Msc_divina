@@ -6,10 +6,11 @@ import './Hero.css'
 
 interface HeroProps {
   imagem: string
+  alt?: string
   alvo: { x: number; y: number }
 }
 
-export function Hero({ imagem, alvo }: HeroProps) {
+export function Hero({ imagem, alt = 'O navio MSC Divina visto de fora', alvo }: HeroProps) {
   const secaoRef = useRef<HTMLElement>(null)
   const reduzido = useReducedMotion()
 
@@ -45,7 +46,7 @@ export function Hero({ imagem, alvo }: HeroProps) {
           <ImagemComFallback
             className="hero__img"
             src={imagem}
-            alt="O navio MSC Divina visto de fora"
+            alt={alt}
             loading="eager"
             fetchpriority="high"
           />

@@ -21,6 +21,13 @@ it('não repete créditos iguais', () => {
   expect(screen.getAllByRole('listitem')).toHaveLength(1)
 })
 
+it('inclui os créditos extras das capas sem duplicar', () => {
+  const base = todas[0] as Area
+  render(<Rodape areas={[base]} creditosExtras={['Foto: Capa', base.credito]} />)
+  expect(screen.getAllByRole('listitem')).toHaveLength(2)
+  expect(screen.getByText('Foto: Capa')).toBeInTheDocument()
+})
+
 it('linka o tour oficial da MSC em nova aba', () => {
   render(<Rodape areas={todas} />)
   const link = screen.getByRole('link', { name: 'Tour virtual oficial da MSC' })

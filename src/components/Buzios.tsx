@@ -1,4 +1,5 @@
 import type { Area } from '../data/tipos'
+import { capas } from '../data/capas'
 import { AreasDoNavio } from './AreasDoNavio'
 import { ImagemComFallback } from './ImagemComFallback'
 import './Buzios.css'
@@ -13,8 +14,8 @@ export function Buzios({ lugares }: BuziosProps) {
       <header className="buzios__abertura">
         <ImagemComFallback
           className="buzios__img"
-          src="/img/buzios-panorama-geral.webp"
-          alt="Vista geral de Búzios"
+          src={capas.buzios.imagem}
+          alt={capas.buzios.alt}
         />
         <div className="buzios__texto">
           <h2 id="buzios-titulo" className="buzios__titulo">Um dia em Búzios</h2>
