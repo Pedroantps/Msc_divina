@@ -22,13 +22,14 @@ export function Hero({ imagem, alvo }: HeroProps) {
           start: 'top top',
           end: 'bottom bottom',
           scrub: true,
+          invalidateOnRefresh: true,
         },
       })
-      tl.fromTo('.hero__img', { scale: 1 }, { scale: 3, duration: 1 }, 0)
+      tl.fromTo('.hero__img', { scale: 1, transformOrigin: `${alvo.x}% ${alvo.y}%` }, { scale: 3, transformOrigin: `${alvo.x}% ${alvo.y}%`, duration: 1 }, 0)
       tl.fromTo('.hero__titulo', { opacity: 1 }, { opacity: 0, duration: 1 / 3 }, 0)
       tl.to(secaoRef.current, { opacity: 0, duration: 0.15 }, 0.85)
     },
-    { scope: secaoRef, dependencies: [reduzido], revertOnUpdate: true },
+    { scope: secaoRef, dependencies: [reduzido, alvo.x, alvo.y], revertOnUpdate: true },
   )
 
   return (

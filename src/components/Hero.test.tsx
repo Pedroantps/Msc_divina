@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
+import { gsap } from '../lib/gsap'
 import { Hero } from './Hero'
 
 const original = window.matchMedia
@@ -18,6 +19,7 @@ function mockMatchMedia(matches: boolean) {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   window.matchMedia = original
 })
 
@@ -32,4 +34,28 @@ it('com movimento reduzido marca a seção como estática', () => {
   mockMatchMedia(true)
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
   expect(screen.getByTestId('hero')).toHaveAttribute('data-estatico', 'true')
+})
+
+it('sem movimento reduzido cria a timeline com scrollTrigger', () => {
+  mockMatchMedia(false)
+  const espiao = vi.spyOn(gsap, 'timeline')
+  render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
+  expect(espiao).toHaveBeenCalledWith(
+    expect.objectContaining({
+      scrollTrigger: expect.objectContaining({
+        trigger: screen.getByTestId('hero'),
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true,
+        invalidateOnRefresh: true,
+      }),
+    }),
+  )
+})
+
+it('com movimento reduzido n�o cria timeline', () => {
+  mockMatchMedia(true)
+  const espiao = vi.spyOn(gsap, 'timeline')
+  render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
+  expect(espiao).not.toHaveBeenCalled()
 })
