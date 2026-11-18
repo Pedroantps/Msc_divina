@@ -11,6 +11,7 @@ export function validarAreas(areas: Area[]): string[] {
     if (!KEBAB.test(a.id)) erros.push(`id inválido: ${a.id}`)
     if (a.descricao.length > 160) erros.push(`descrição longa: ${a.id}`)
     if (!a.imagem.startsWith('/img/') || !a.imagem.endsWith('.webp')) erros.push(`imagem inválida: ${a.id}`)
+    if (a.panorama !== undefined && (!a.panorama.startsWith('/pano/') || !a.panorama.endsWith('.webp'))) erros.push(`panorama inválido: ${a.id}`)
     if (a.categoria === 'navio' && a.deck === undefined) erros.push(`deck faltando: ${a.id}`)
     if (!a.credito.trim()) erros.push(`crédito faltando: ${a.id}`)
   }

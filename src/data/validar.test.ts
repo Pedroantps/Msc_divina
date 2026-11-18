@@ -17,3 +17,7 @@ it('acusa área do navio sem deck', () =>
   expect(validarAreas([{ ...base, deck: undefined }])).toContain('deck faltando: teatro'))
 it('acusa crédito vazio', () =>
   expect(validarAreas([{ ...base, credito: '' }])).toContain('crédito faltando: teatro'))
+it('acusa panorama fora de /pano/ ou não webp', () =>
+  expect(validarAreas([{ ...base, panorama: '/img/x.jpg' }])).toContain('panorama inválido: teatro'))
+it('aceita panorama válido', () =>
+  expect(validarAreas([{ ...base, panorama: '/pano/teatro.webp' }])).toEqual([]))

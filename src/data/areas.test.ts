@@ -16,3 +16,7 @@ it('tem de 3 a 5 lugares em Búzios', () => {
   expect(lugaresBuzios.length).toBeGreaterThanOrEqual(3)
   expect(lugaresBuzios.length).toBeLessThanOrEqual(5)
 })
+it('nenhuma descrição contém texto provisório', () => {
+  for (const a of [...areasDoNavio, ...lugaresBuzios])
+    expect(a.descricao.toLowerCase()).not.toContain('provisóri')
+})
