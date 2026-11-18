@@ -5,3 +5,12 @@ fotos-originais/
 .vercel/
 .claude/settings.local.json
 *.local
+
+# Editor
+npm-debug.log*
+dist-ssr
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.log
