@@ -26,7 +26,7 @@ export function Hero({ imagem, alvo }: HeroProps) {
           invalidateOnRefresh: true,
         },
       })
-      tl.fromTo('.hero__img', { scale: 1, transformOrigin: `${alvo.x}% ${alvo.y}%` }, { scale: 3, transformOrigin: `${alvo.x}% ${alvo.y}%`, duration: 1 }, 0)
+      tl.fromTo('.hero__midia', { scale: 1, transformOrigin: `${alvo.x}% ${alvo.y}%` }, { scale: 3, transformOrigin: `${alvo.x}% ${alvo.y}%`, duration: 1 }, 0)
       tl.fromTo('.hero__titulo', { opacity: 1 }, { opacity: 0, duration: 1 / 3 }, 0)
       tl.to(secaoRef.current, { opacity: 0, duration: 0.15 }, 0.85)
     },
@@ -41,11 +41,13 @@ export function Hero({ imagem, alvo }: HeroProps) {
       data-estatico={reduzido ? 'true' : undefined}
     >
       <div className="hero__palco">
-        <ImagemComFallback
-          className="hero__img"
-          src={imagem}
-          alt="O navio MSC Divina visto de fora"
-        />
+        <div className="hero__midia">
+          <ImagemComFallback
+            className="hero__img"
+            src={imagem}
+            alt="O navio MSC Divina visto de fora"
+          />
+        </div>
         <div className="hero__degrade">
           <h1 className="hero__titulo">MSC Divina</h1>
         </div>

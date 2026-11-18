@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { gsap } from '../lib/gsap'
 import { Hero } from './Hero'
@@ -58,4 +58,15 @@ it('com movimento reduzido não cria timeline', () => {
   const espiao = vi.spyOn(gsap, 'timeline')
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
   expect(espiao).not.toHaveBeenCalled()
+})
+
+it('o zoom anima um wrapper estável que continua no documento quando a foto falha', () => {
+  mockMatchMedia(false)
+  render(<Hero imagem="/img/nao-existe.webp" alvo={{ x: 62, y: 48 }} />)
+  const alvoZoom = document.querySelector<HTMLElement>('.hero__midia')!
+  expect(gsap.getTweensOf(alvoZoom).length).toBeGreaterThan(0)
+  fireEvent.error(screen.getByRole('img', { name: 'O navio MSC Divina visto de fora' }))
+  expect(screen.getByRole('img', { name: 'O navio MSC Divina visto de fora' })).toHaveAttribute('data-fallback', 'true')
+  expect(alvoZoom.isConnected).toBe(true)
+  expect(alvoZoom.contains(screen.getByRole('img'))).toBe(true)
 })
