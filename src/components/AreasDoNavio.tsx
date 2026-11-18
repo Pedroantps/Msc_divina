@@ -29,7 +29,8 @@ export function AreasDoNavio({ areas, renderMidia, aposHero }: AreasDoNavioProps
           obs.disconnect()
         }
       },
-      { rootMargin: '100% 0px' },
+      // .areas começa em 170svh: com 0px monta em ~70svh de scroll, ~100svh antes do fade do Hero.
+      { rootMargin: '0px' },
     )
     obs.observe(el)
     return () => obs.disconnect()

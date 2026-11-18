@@ -80,7 +80,7 @@ it('cria o viewer quando entra na tela e mostra a dica', async () => {
         panorama: '/pano/piscina.webp',
         navbar: false,
         touchmoveTwoFingers: true,
-        mousewheelCtrlKey: true,
+        mousewheel: false,
         defaultZoomLvl: 0,
         lang: expect.objectContaining({
           twoFingers: 'Use dois dedos para olhar em volta',

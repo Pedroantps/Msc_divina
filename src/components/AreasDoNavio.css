@@ -51,6 +51,12 @@
   min-height: 150svh;
 }
 
+/* O texto da primeira área acompanha a imagem durante toda a pausa. */
+.areas[data-apos-hero='true']:not([data-estatico='true']) .areas__secoes > .area:first-child .area__texto {
+  position: sticky;
+  bottom: 0;
+}
+
 .areas__secoes .area {
   background: transparent;
 }

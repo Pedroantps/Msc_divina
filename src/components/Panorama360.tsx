@@ -99,7 +99,7 @@ export function Panorama360({ panorama, imagemPlana, alt, ancora }: Panorama360P
           panorama,
           navbar: false,
           touchmoveTwoFingers: true,
-          mousewheelCtrlKey: true,
+          mousewheel: false,
           lang: LANG_PT,
           defaultZoomLvl: 0,
         })
