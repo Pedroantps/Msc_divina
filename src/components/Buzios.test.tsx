@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { capas } from '../data/capas'
@@ -61,6 +63,22 @@ it('mostra um bloco por lugar, com id, frase, nome, descrição e foto', () => {
     expect(screen.getByRole('heading', { level: 3, name: l.nome })).toBeInTheDocument()
     expect(bloco.querySelector('img')).toHaveAttribute('src', l.imagem)
   })
+})
+
+it('as fotos dos lugares têm srcSet com a variante de 640px que existe em disco', () => {
+  mockMatchMedia(false)
+  montar()
+  lugaresBuzios.forEach((l) => {
+    const srcset = document.getElementById(l.id)!.querySelector('img')!.getAttribute('srcset') ?? ''
+    const mini = /(\/img\/640\/[^\s]+)\s+640w/.exec(srcset)?.[1]
+    expect(mini).toBeTruthy()
+    expect(existsSync(path.join(process.cwd(), 'public', mini!))).toBe(true)
+  })
+})
+
+it('a frase de Orla Bardot usa hífen não separável em beira‑mar', () => {
+  const orla = lugaresBuzios.find((l) => l.id === 'orla-bardot')!
+  expect(orla.frase).toContain('beira‑mar')
 })
 
 it('mostra a fileira de números do capítulo', () => {
