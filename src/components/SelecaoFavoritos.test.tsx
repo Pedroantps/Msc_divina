@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { areasDoNavio } from '../data/areas'
@@ -12,7 +14,7 @@ const original = window.matchMedia
 
 function mockMatchMedia(reduzido: boolean, larga = true) {
   window.matchMedia = ((query: string) => ({
-    matches: query.includes('reduced-motion') ? reduzido : larga,
+    matches: (query.includes('min-width') ? larga : true) && (query.includes('no-preference') ? !reduzido : query.includes('reduce') ? reduzido : true),
     media: query,
     onchange: null,
     addEventListener: () => {},
@@ -54,13 +56,20 @@ it('mostra Deck ou Búzios como legenda', () => {
   expect(screen.getAllByText('Búzios').some((e) => e.className.includes('favoritos__legenda'))).toBe(true)
 })
 
-it('favoritar alterna aria-pressed, troca o nome e persiste', async () => {
+it('Cabines mostra a quantidade de ambientes em 360° e nunca "undefined"', () => {
+  const cabines = areasDoNavio.find((a) => a.id === 'cabines')!
+  const { container } = render(<SelecaoFavoritos areas={[cabines]} />)
+  expect(container.textContent).not.toContain('undefined')
+  expect(screen.getByText(`${cabines.cenas!.length} ambientes em 360°`)).toBeInTheDocument()
+})
+
+it('favoritar mantém o rótulo fixo e só alterna aria-pressed e persiste', async () => {
   render(<SelecaoFavoritos areas={todas} />)
   const nome = areasDoNavio[0].nome
   const b = screen.getByRole('button', { name: `Favoritar ${nome}` })
   expect(b).toHaveAttribute('aria-pressed', 'false')
   await userEvent.click(b)
-  const marcado = screen.getByRole('button', { name: `Remover ${nome} dos favoritos` })
+  const marcado = screen.getByRole('button', { name: `Favoritar ${nome}` })
   expect(marcado).toHaveAttribute('aria-pressed', 'true')
   expect(JSON.parse(localStorage.getItem(CHAVE_FAVORITOS) ?? '[]')).toEqual([areasDoNavio[0].id])
   await userEvent.click(marcado)
@@ -70,7 +79,46 @@ it('favoritar alterna aria-pressed, troca o nome e persiste', async () => {
 it('lê os favoritos salvos', () => {
   localStorage.setItem(CHAVE_FAVORITOS, JSON.stringify([lugaresBuzios[0].id]))
   render(<SelecaoFavoritos areas={todas} />)
-  expect(screen.getByRole('button', { name: `Remover ${lugaresBuzios[0].nome} dos favoritos` })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: `Favoritar ${lugaresBuzios[0].nome}` })).toHaveAttribute('aria-pressed', 'true')
+})
+
+it('a barra de resumo fica oculta sem seleção e visível com seleção', async () => {
+  const { container } = render(<SelecaoFavoritos areas={todas} />)
+  const resumo = container.querySelector('.favoritos__resumo')!
+  expect(resumo).toHaveClass('favoritos__resumo--vazio')
+  await userEvent.click(screen.getByRole('button', { name: `Favoritar ${areasDoNavio[0].nome}` }))
+  expect(resumo).not.toHaveClass('favoritos__resumo--vazio')
+})
+
+it('todo cartão tem srcSet com a variante de 640px que existe em disco', () => {
+  const { container } = render(<SelecaoFavoritos areas={todas} />)
+  const imgs = Array.from(container.querySelectorAll('.favoritos__foto img'))
+  expect(imgs).toHaveLength(todas.length)
+  for (const img of imgs) {
+    const mini = /(\/img\/640\/[^\s]+)\s+640w/.exec(img.getAttribute('srcset') ?? '')?.[1]
+    expect(mini).toBeTruthy()
+    expect(existsSync(path.join(process.cwd(), 'public', mini!))).toBe(true)
+    expect(img).toHaveAttribute('sizes')
+  }
+})
+
+it('o foco por teclado dentro das colunas leva o elemento ao centro da tela', async () => {
+  const rolar = vi.fn()
+  Element.prototype.scrollIntoView = rolar
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => setTimeout(() => cb(0), 0) as unknown as number)
+  render(<SelecaoFavoritos areas={todas} />)
+  await userEvent.tab()
+  await waitFor(() => expect(rolar).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' }))
+})
+
+it('com movimento reduzido o foco rola com behavior auto', async () => {
+  const rolar = vi.fn()
+  Element.prototype.scrollIntoView = rolar
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => setTimeout(() => cb(0), 0) as unknown as number)
+  mockMatchMedia(true)
+  render(<SelecaoFavoritos areas={todas} />)
+  await userEvent.tab()
+  await waitFor(() => expect(rolar).toHaveBeenCalledWith({ block: 'center', behavior: 'auto' }))
 })
 
 it('o resumo aria-live atualiza e limpar desmarca tudo', async () => {

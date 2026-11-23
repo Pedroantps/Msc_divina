@@ -1,19 +1,22 @@
 .favoritos {
   position: relative;
   overflow: hidden;
+  /* clip não cria contêiner de rolagem: a barra de resumo (sticky) continua funcionando. */
+  overflow: clip;
   padding: clamp(4rem, 10vw, 8rem) var(--margem) clamp(4rem, 8vw, 6rem);
   background: var(--cor-base-clara);
   color: var(--cor-texto-escuro);
   font-family: var(--fonte-texto);
 }
 
-.favoritos__marca {
-  position: absolute;
-  top: 2rem;
-  left: 0;
+/* Marca d'água no fluxo, acima do título: cabe inteira e nunca cruza o texto. */
+.favoritos .favoritos__marca {
+  position: relative;
   z-index: 0;
-  margin: 0;
-  color: var(--cor-marca-dagua);
+  margin: 0 0 clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(4rem, 15.5vw, 15rem);
+  line-height: 0.9;
+  color: #e6e6e3;
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
@@ -83,7 +86,7 @@
   margin: 0;
   font-family: var(--fonte-titulo);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
 }
 
@@ -92,15 +95,34 @@
   color: var(--cor-texto-suave-escuro);
 }
 
+/* Aparece só com seleção; fica no canto inferior esquerdo, acima da barra de capítulos,
+   enquanto a seção estiver na tela. */
 .favoritos__resumo {
+  position: sticky;
+  bottom: calc(var(--barra-altura) + var(--margem));
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
+  width: fit-content;
+  max-width: 100%;
   margin-top: clamp(2.5rem, 6vw, 4rem);
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--cor-marca-dagua);
+  padding: 0.75rem 1rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1.5rem rgb(14 14 16 / 0.14);
+}
+
+/* Sem seleção: some da vista, mas o aria-live continua no DOM. */
+.favoritos__resumo--vazio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  box-shadow: none;
 }
 
 .favoritos__contador {
