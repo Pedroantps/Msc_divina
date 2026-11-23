@@ -46,12 +46,9 @@ interface Panorama360Props {
   yaw?: number
   /**
    * Liga e desliga o viewer (ex.: o tour só vive com o modal aberto). Trocar `panorama`/`yaw`
-   * com o viewer ligado usa setPanorama, sem recriá-lo. Se omitido, vale o modo da fase 1:
-   * liga quando a `ancora` chega perto da tela e desliga quando se afasta.
+   * com o viewer ligado usa setPanorama, sem recriá-lo.
    */
-  ativo?: boolean
-  /** Id do elemento observado no modo da fase 1 (sem `ativo`). */
-  ancora?: string
+  ativo: boolean
   /** A roda do mouse aproxima a imagem. Só faz sentido em tela cheia. */
   rolagemZoom?: boolean
   /** Mostra o botão "Mover o celular" (giroscópio) em telas de toque. */
@@ -64,11 +61,9 @@ export function Panorama360({
   alt,
   yaw = 0,
   ativo: ativoProp,
-  ancora,
   rolagemZoom = false,
   giroscopio = false,
 }: Panorama360Props) {
-  const raiz = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const falhou = useRef(false)
   const viewerRef = useRef<ViewerVivo | null>(null)
@@ -80,54 +75,42 @@ export function Panorama360({
     cena.current = { panorama, yaw, rolagemZoom, giroscopio }
   })
 
-  const controlado = ativoProp !== undefined
-  const [visivel, setVisivel] = useState(false)
-  const querAtivo = controlado ? ativoProp : visivel
   const [ativo, setAtivo] = useState(false)
   const [pronto, setPronto] = useState(false)
   const [indisponivel, setIndisponivel] = useState(false)
+  // Chave (`panorama|yaw`) da cena que falhou ao carregar: só ela cai para a foto plana.
+  const [cenaComFalha, setCenaComFalha] = useState<string | null>(null)
   const [dicaVisivel, setDicaVisivel] = useState(true)
   const [giroDisponivel, setGiroDisponivel] = useState(false)
   const [giroLigado, setGiroLigado] = useState(false)
   const textoDica = telaDeToque() ? 'Use dois dedos para olhar em volta' : 'Arraste para olhar em volta'
 
-  // Modo da fase 1: liga quando o âncora chega a 200px da tela; desliga quando sai por inteiro
-  // de uma folga de 1 tela. Assim só os viewers das áreas próximas ficam vivos.
+  // Decide se há viewer: com `ativo` e WebGL, renderiza a área do viewer; senão, foto plana.
   useEffect(() => {
-    if (controlado) return
-    const el = (ancora ? document.getElementById(ancora) : null) ?? raiz.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const entrar = new IntersectionObserver(
-      (entradas) => {
-        if (entradas.some((e) => e.isIntersecting)) setVisivel(true)
-      },
-      { rootMargin: '200px' },
-    )
-    const sair = new IntersectionObserver(
-      (entradas) => {
-        if (entradas.length > 0 && entradas.every((e) => !e.isIntersecting)) setVisivel(false)
-      },
-      { rootMargin: '100% 0px' },
-    )
-    entrar.observe(el)
-    sair.observe(el)
-    return () => {
-      entrar.disconnect()
-      sair.disconnect()
-    }
-  }, [ancora, controlado])
-
-  useEffect(() => {
-    if (!querAtivo) {
+    if (!ativoProp) {
       setAtivo(false)
       setPronto(false)
       setIndisponivel(false)
+      setCenaComFalha(null)
       return
     }
     if (falhou.current || !suportaWebGL()) {
       setIndisponivel(true)
       return
     }
+    setIndisponivel(false)
+    setCenaComFalha(null)
+    setDicaVisivel(true)
+    setGiroDisponivel(false)
+    setGiroLigado(false)
+    setAtivo(true)
+  }, [ativoProp])
+
+  // Cria o viewer só depois que a área (e o container) já foram renderizadas: o `import()`
+  // pode resolver antes de qualquer render, por isso o container nunca é lido antes disso.
+  useEffect(() => {
+    const alvo = container.current
+    if (!ativo || !alvo) return
     let cancelado = false
     let viewer: ViewerVivo | null = null
     const desistir = () => {
@@ -141,12 +124,6 @@ export function Panorama360({
       setIndisponivel(true)
     }
 
-    setIndisponivel(false)
-    setDicaVisivel(true)
-    setGiroDisponivel(false)
-    setGiroLigado(false)
-    setAtivo(true)
-    // o container só existe depois do render com ativo=true
     const iniciar = async () => {
       try {
         const comGiro = cena.current.giroscopio && telaDeToque()
@@ -157,10 +134,9 @@ export function Panorama360({
           comGiro ? import('@photo-sphere-viewer/gyroscope-plugin').catch(() => null) : Promise.resolve(null),
         ])
         if (cancelado) return
-        if (!container.current) return desistir()
         const atual = cena.current
         const v = new Viewer({
-          container: container.current,
+          container: alvo,
           panorama: atual.panorama,
           navbar: false,
           touchmoveTwoFingers: true,
@@ -175,15 +151,14 @@ export function Panorama360({
         viewer = v
         viewerRef.current = v
         carregada.current = `${atual.panorama}|${atual.yaw}`
+        // Um panorama que não carrega derruba só aquela cena; o viewer segue para as outras.
         v.addEventListener('panorama-error', () => {
-          if (!cancelado) desistir()
+          if (!cancelado) setCenaComFalha(carregada.current)
         })
         // Memória de GPU esgotada em celular fraco: volta para a foto plana.
-        container.current
-          .querySelector('canvas')
-          ?.addEventListener('webglcontextlost', () => {
-            if (!cancelado) desistir()
-          })
+        alvo.querySelector('canvas')?.addEventListener('webglcontextlost', () => {
+          if (!cancelado) desistir()
+        })
         if (modGiro && typeof v.getPlugin === 'function') {
           const g = v.getPlugin(modGiro.GyroscopePlugin)
           if (g) {
@@ -212,7 +187,7 @@ export function Panorama360({
       viewerRef.current = null
       giroRef.current = null
     }
-  }, [querAtivo])
+  }, [ativo])
 
   // Cena nova com o viewer vivo: troca o panorama sem recriar o viewer.
   useEffect(() => {
@@ -228,8 +203,11 @@ export function Panorama360({
     })
   }, [panorama, yaw, pronto])
 
+  const chaveAtual = `${panorama}|${yaw}`
+  const cenaFalhou = ativo && cenaComFalha === chaveAtual
+
   return (
-    <div ref={raiz} className="panorama">
+    <div className="panorama">
       {ativo ? (
         <div
           className="panorama__viewer-area"
@@ -239,7 +217,15 @@ export function Panorama360({
           onTouchStart={() => setDicaVisivel(false)}
         >
           <div ref={container} className="panorama__viewer" />
-          {dicaVisivel && (
+          {cenaFalhou && (
+            <div className="panorama__falha">
+              <ImagemComFallback className="panorama__img" src={imagemPlana} alt={alt} />
+              <p className="panorama__aviso" role="status">
+                Não foi possível carregar este ambiente em 360°. Mostrando a foto.
+              </p>
+            </div>
+          )}
+          {dicaVisivel && !cenaFalhou && (
             <p className="panorama__dica">
               <span>{textoDica}</span>
             </p>

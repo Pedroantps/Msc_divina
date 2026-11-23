@@ -14,13 +14,14 @@ export function lonLatParaPixel(lon, lat, largura, altura) {
 /**
  * Faixa cilíndrica: o eixo x anda em ângulo de forma linear (sem esticar as bordas
  * como a perspectiva faz), o eixo y segue a tangente da latitude.
+ * `pitch` inclina o centro da faixa na vertical (graus; negativo olha para baixo do horizonte).
  * Devolve, para o pixel (px, py) da saída, a posição na origem.
  */
-export function cilindrica({ yaw, campo, largura, altura }) {
+export function cilindrica({ yaw, campo, largura, altura, pitch = 0 }) {
   const f = largura / (campo * RAD)
   return (px, py) => {
     const lon = yaw * RAD + (px + 0.5 - largura / 2) / f
-    const lat = Math.atan((altura / 2 - (py + 0.5)) / f)
+    const lat = Math.atan((altura / 2 - (py + 0.5)) / f) + pitch * RAD
     return [lon, lat]
   }
 }

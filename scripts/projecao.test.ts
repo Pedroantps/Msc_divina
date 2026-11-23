@@ -23,3 +23,12 @@ it('lon 0 cai no meio do equirretangular e a costura dá a volta', () => {
   expect(lonLatParaPixel(0, 0, 4096, 2048)[0]).toBeCloseTo(2047.5, 5)
   expect(lonLatParaPixel(Math.PI * 1.5, 0, 4096, 2048)[0]).toBeCloseTo(lonLatParaPixel(-Math.PI / 2, 0, 4096, 2048)[0], 5)
 })
+
+it('o pitch desloca o centro da faixa para baixo do horizonte sem mexer no yaw', () => {
+  const mapa = cilindrica({ yaw: 40, campo: 150, largura: 3000, altura: 1000, pitch: -8 })
+  const [lon, lat] = mapa(1499.5, 499.5)
+  expect(graus(lon)).toBeCloseTo(40, 5)
+  expect(graus(lat)).toBeCloseTo(-8, 5)
+  // o topo continua acima do centro
+  expect(mapa(1499.5, 0)[1]).toBeGreaterThan(lat)
+})

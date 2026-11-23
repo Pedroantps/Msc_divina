@@ -38,6 +38,39 @@
   object-fit: cover;
 }
 
+/* Camada que oculta uma imagem já coberta pela seguinte (separada do fade da camada). */
+.percurso__giro--oculto {
+  visibility: hidden;
+}
+
+/*
+ * Véu de contraste: degradê que cobre a altura toda do palco do lado do texto da parada ativa
+ * (esquerda, direita ou, no centro-topo, vertical). Garante o contraste sobre qualquer faixa.
+ */
+.percurso__veu {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.percurso__veu[data-posicao] {
+  opacity: 1;
+}
+
+.percurso__veu[data-posicao='esquerda'] {
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+}
+
+.percurso__veu[data-posicao='direita'] {
+  background: linear-gradient(270deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+}
+
+.percurso__veu[data-posicao='centro'] {
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+}
+
 /* Sobe as seções por cima do palco (que ocupa 100svh no fluxo). */
 .percurso__paradas {
   position: relative;
@@ -47,6 +80,11 @@
 .parada {
   position: relative;
   min-height: 150svh;
+}
+
+/* A última parada é mais alta: o giro dela dura o mesmo que o das outras até o palco soltar. */
+.percurso__paradas .parada:last-child {
+  min-height: 250svh;
 }
 
 /*
@@ -70,16 +108,6 @@
   opacity: 1;
   transform: none;
   pointer-events: auto;
-}
-
-/* Gradiente local atrás do texto, para contraste sobre qualquer foto. */
-.parada__texto::before {
-  content: '';
-  position: absolute;
-  inset: -4rem -5rem;
-  z-index: -1;
-  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0.35) 45%, transparent 72%);
-  pointer-events: none;
 }
 
 .parada__texto[data-posicao='esquerda'] {
@@ -110,17 +138,21 @@
   font-size: var(--t-titulo);
   font-weight: 500;
   text-wrap: balance;
+  text-shadow: 0 1px 18px rgb(0 0 0 / 0.55);
 }
 
 .parada__meta {
   margin: 0 0 0.375rem;
-  color: var(--cor-texto-suave-claro);
+  color: var(--cor-texto-claro);
+  font-weight: 600;
+  text-shadow: 0 0 8px rgb(0 0 0 / 0.6);
 }
 
 .parada__cta {
   display: flex;
   width: max-content;
   margin-top: 1.5rem;
+  text-shadow: 0 0 8px rgb(0 0 0 / 0.6);
 }
 
 .parada__descricao {
@@ -142,9 +174,18 @@
     text-align: left;
   }
 
+  /* No celular o degradê vem do próprio bloco de texto, colado embaixo. */
+  .percurso__veu {
+    display: none;
+  }
+
   .parada__texto::before {
+    content: '';
+    position: absolute;
     inset: 0;
+    z-index: -1;
     background: linear-gradient(to top, rgb(0 0 0 / 0.85) 30%, transparent);
+    pointer-events: none;
   }
 
   .parada__texto[data-posicao='centro'] .parada__cta {
@@ -201,11 +242,13 @@
   text-align: left;
 }
 
+
 .percurso[data-estatico='true'] .parada__texto::before {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .percurso__veu,
   .parada__texto {
     transition: none;
   }

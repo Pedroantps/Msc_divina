@@ -109,7 +109,11 @@ function ConteudoDoTour({ area, cenaInicial, aoFechar }: ConteudoProps) {
       if (e.key === 'Escape') {
         e.preventDefault()
         aoFechar()
-      } else if (e.key === 'ArrowLeft') mover(-1)
+        return
+      }
+      // Atalhos do navegador (Alt+←, Ctrl+→...) e teclas já tratadas por outro elemento não trocam de cena.
+      if (e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented) return
+      if (e.key === 'ArrowLeft') mover(-1)
       else if (e.key === 'ArrowRight') mover(1)
     }
     document.addEventListener('keydown', aoTeclar)
