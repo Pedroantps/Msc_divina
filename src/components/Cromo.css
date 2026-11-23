@@ -1,0 +1,51 @@
+.cromo__logo {
+  position: fixed;
+  top: var(--margem);
+  left: var(--margem);
+  z-index: 50;
+  font-family: var(--fonte-titulo);
+  font-size: var(--t-rotulo);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1;
+  pointer-events: none;
+  color: var(--cor-texto-claro);
+  transition: color 0.3s ease;
+}
+
+.cromo__logo[data-tema-logo='escuro'] {
+  color: var(--cor-texto-escuro);
+}
+
+.cromo__rolar {
+  position: fixed;
+  left: var(--margem);
+  bottom: var(--margem);
+  z-index: 50;
+  color: var(--cor-texto-claro);
+  opacity: 1;
+  transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+
+.cromo__rolar--oculto {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+@media (max-width: 640px) {
+  /* A barra de capítulos ocupa a largura toda embaixo: o indicador sobe acima dela. */
+  .cromo__rolar {
+    bottom: calc(var(--barra-altura) + var(--margem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cromo__logo,
+  .cromo__rolar,
+  .cromo__rolar--oculto {
+    transition: none;
+  }
+}
