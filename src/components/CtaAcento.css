@@ -1,0 +1,52 @@
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cta__quadrado {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--cta-tamanho);
+  height: var(--cta-tamanho);
+  background: var(--cor-acento);
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.cta:hover .cta__quadrado,
+.cta:focus-visible .cta__quadrado {
+  transform: scale(1.12);
+}
+
+.cta[aria-pressed='true'] .cta__quadrado {
+  background: var(--cor-texto-escuro);
+}
+
+.cta__rotulo {
+  line-height: 1;
+}
+
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta__quadrado {
+    transition: none;
+  }
+}

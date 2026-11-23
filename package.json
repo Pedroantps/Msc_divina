@@ -12,9 +12,12 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest",
-    "imagens": "node scripts/otimizar-imagens.mjs"
+    "imagens": "node scripts/otimizar-imagens.mjs",
+    "faixas": "node scripts/gerar-faixas.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/inter-tight": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
     "@gsap/react": "^2.1.2",
     "@photo-sphere-viewer/core": "^5.15.1",
     "gsap": "^3.15.1",

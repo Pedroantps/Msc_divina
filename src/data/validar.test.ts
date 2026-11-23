@@ -1,7 +1,7 @@
 import { validarAreas } from './validar'
 import type { Area } from './tipos'
 
-const base: Area = { id: 'teatro', nome: 'Teatro', categoria: 'navio', deck: 6,
+const base: Area = { id: 'teatro', nome: 'Teatro', categoria: 'navio', deck: 6, titulo: 'Onde a noite começa',
   descricao: 'Shows toda noite.', imagem: '/img/teatro.webp', credito: 'Foto: Família' }
 
 it('aceita uma lista válida', () => expect(validarAreas([base])).toEqual([]))
@@ -21,3 +21,7 @@ it('acusa panorama fora de /pano/ ou não webp', () =>
   expect(validarAreas([{ ...base, panorama: '/img/x.jpg' }])).toContain('panorama inválido: teatro'))
 it('aceita panorama válido', () =>
   expect(validarAreas([{ ...base, panorama: '/pano/teatro.webp' }])).toEqual([]))
+it('acusa área do navio sem título', () =>
+  expect(validarAreas([{ ...base, titulo: undefined }])).toContain('título faltando: teatro'))
+it('acusa faixa fora de /faixa/', () =>
+  expect(validarAreas([{ ...base, faixa: '/img/teatro.webp' }])).toContain('faixa inválida: teatro'))

@@ -11,14 +11,53 @@ body {
 }
 
 body {
-  background: var(--cor-fundo);
-  color: var(--cor-texto);
+  background: var(--cor-base-escura);
+  color: var(--cor-texto-claro);
   font-family: var(--fonte-texto);
+  font-size: var(--t-texto);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--fonte-titulo);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+/* A palavra gigante de cada capítulo. */
+.exibicao {
+  font-family: var(--fonte-exibicao);
+  font-weight: 250;
+  font-size: var(--t-gigante);
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+}
+
+/* Rótulos de ação e metadados: caixa alta, pequenos, espaçados. */
+.rotulo {
+  font-family: var(--fonte-texto);
+  font-size: var(--t-rotulo);
   font-weight: 600;
+  letter-spacing: var(--rotulo-espacamento);
+  text-transform: uppercase;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cor-acento);
+  outline-offset: 3px;
+}
+
+/* Temas por seção: o cromo fixo lê data-tema para trocar de cor. */
+[data-tema='claro'] {
+  background: var(--cor-base-clara);
+  color: var(--cor-texto-escuro);
+}
+
+[data-tema='escuro'] {
+  background: var(--cor-base-escura);
+  color: var(--cor-texto-claro);
 }
