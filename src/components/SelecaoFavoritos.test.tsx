@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs'
-import path from 'node:path'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -10,6 +8,9 @@ import { gsap } from '../lib/gsap'
 import { SelecaoFavoritos } from './SelecaoFavoritos'
 
 const todas = [...areasDoNavio, ...lugaresBuzios]
+// Arquivos reais de public/img/640 (só os nomes).
+const variantes640 = Object.keys(import.meta.glob('../../public/img/640/*.webp')).map((c) => c.split('/').pop())
+
 const original = window.matchMedia
 
 function mockMatchMedia(reduzido: boolean, larga = true) {
@@ -97,7 +98,7 @@ it('todo cartão tem srcSet com a variante de 640px que existe em disco', () => 
   for (const img of imgs) {
     const mini = /(\/img\/640\/[^\s]+)\s+640w/.exec(img.getAttribute('srcset') ?? '')?.[1]
     expect(mini).toBeTruthy()
-    expect(existsSync(path.join(process.cwd(), 'public', mini!))).toBe(true)
+    expect(variantes640).toContain(mini!.split('/').pop())
     expect(img).toHaveAttribute('sizes')
   }
 })

@@ -1,11 +1,12 @@
-import { existsSync } from 'node:fs'
-import path from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { capas } from '../data/capas'
 import { lugaresBuzios } from '../data/buzios'
 import { gsap } from '../lib/gsap'
 import { Buzios } from './Buzios'
+
+// Arquivos reais de public/img/640 (só os nomes).
+const variantes640 = Object.keys(import.meta.glob('../../public/img/640/*.webp')).map((c) => c.split('/').pop())
 
 const original = window.matchMedia
 
@@ -72,7 +73,7 @@ it('as fotos dos lugares têm srcSet com a variante de 640px que existe em disco
     const srcset = document.getElementById(l.id)!.querySelector('img')!.getAttribute('srcset') ?? ''
     const mini = /(\/img\/640\/[^\s]+)\s+640w/.exec(srcset)?.[1]
     expect(mini).toBeTruthy()
-    expect(existsSync(path.join(process.cwd(), 'public', mini!))).toBe(true)
+    expect(variantes640).toContain(mini!.split('/').pop())
   })
 })
 
