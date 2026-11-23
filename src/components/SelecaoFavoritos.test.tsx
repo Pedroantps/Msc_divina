@@ -1,50 +1,114 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { areasDoNavio } from '../data/areas'
 import { lugaresBuzios } from '../data/buzios'
+import { CHAVE_FAVORITOS } from '../hooks/useFavoritos'
+import { gsap } from '../lib/gsap'
 import { SelecaoFavoritos } from './SelecaoFavoritos'
 
 const todas = [...areasDoNavio, ...lugaresBuzios]
+const original = window.matchMedia
 
-beforeEach(() => localStorage.clear())
-afterEach(() => localStorage.clear())
+function mockMatchMedia(reduzido: boolean, larga = true) {
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes('reduced-motion') ? reduzido : larga,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia
+}
 
-it('cada área é um botão de alternar', async () => {
+beforeEach(() => {
+  localStorage.clear()
+  mockMatchMedia(false)
+})
+afterEach(() => {
+  localStorage.clear()
+  vi.restoreAllMocks()
+  window.matchMedia = original
+})
+
+it('tem título, instrução e a seção clara com id favoritos', () => {
+  const { container } = render(<SelecaoFavoritos areas={todas} />)
+  expect(screen.getByRole('heading', { level: 2, name: 'Nossos favoritos' })).toBeInTheDocument()
+  expect(screen.getByText('Marque o que vocês mais querem aproveitar')).toBeInTheDocument()
+  const secao = container.querySelector('section')
+  expect(secao).toHaveAttribute('id', 'favoritos')
+  expect(secao).toHaveAttribute('data-tema', 'claro')
+})
+
+it('há um cartão (h3) e um botão de favoritar por área', () => {
   render(<SelecaoFavoritos areas={todas} />)
-  const b = screen.getByRole('button', { name: areasDoNavio[0].nome })
+  expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(todas.length)
+  for (const a of todas) expect(screen.getByRole('button', { name: `Favoritar ${a.nome}` })).toBeInTheDocument()
+})
+
+it('mostra Deck ou Búzios como legenda', () => {
+  render(<SelecaoFavoritos areas={[areasDoNavio[0], lugaresBuzios[0]]} />)
+  expect(screen.getByText(`Deck ${areasDoNavio[0].deck}`)).toBeInTheDocument()
+  expect(screen.getAllByText('Búzios').some((e) => e.className.includes('favoritos__legenda'))).toBe(true)
+})
+
+it('favoritar alterna aria-pressed, troca o nome e persiste', async () => {
+  render(<SelecaoFavoritos areas={todas} />)
+  const nome = areasDoNavio[0].nome
+  const b = screen.getByRole('button', { name: `Favoritar ${nome}` })
   expect(b).toHaveAttribute('aria-pressed', 'false')
   await userEvent.click(b)
-  expect(b).toHaveAttribute('aria-pressed', 'true')
+  const marcado = screen.getByRole('button', { name: `Remover ${nome} dos favoritos` })
+  expect(marcado).toHaveAttribute('aria-pressed', 'true')
+  expect(JSON.parse(localStorage.getItem(CHAVE_FAVORITOS) ?? '[]')).toEqual([areasDoNavio[0].id])
+  await userEvent.click(marcado)
+  expect(screen.getByRole('button', { name: `Favoritar ${nome}` })).toHaveAttribute('aria-pressed', 'false')
 })
 
-it('separa em No navio e Em Búzios', () => {
+it('lê os favoritos salvos', () => {
+  localStorage.setItem(CHAVE_FAVORITOS, JSON.stringify([lugaresBuzios[0].id]))
   render(<SelecaoFavoritos areas={todas} />)
-  expect(screen.getByRole('heading', { level: 2, name: 'Seus lugares favoritos' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { level: 3, name: 'No navio' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { level: 3, name: 'Em Búzios' })).toBeInTheDocument()
-  expect(screen.getAllByRole('button', { pressed: false }).length).toBeGreaterThanOrEqual(todas.length)
+  expect(screen.getByRole('button', { name: `Remover ${lugaresBuzios[0].nome} dos favoritos` })).toHaveAttribute('aria-pressed', 'true')
 })
 
-it('mostra o contador', async () => {
+it('o resumo aria-live atualiza e limpar desmarca tudo', async () => {
   render(<SelecaoFavoritos areas={todas} />)
-  expect(screen.getByText('Nenhum lugar escolhido')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: areasDoNavio[0].nome }))
+  const resumo = screen.getByText('Nenhum lugar escolhido')
+  expect(resumo).toHaveAttribute('aria-live', 'polite')
+  await userEvent.click(screen.getByRole('button', { name: `Favoritar ${areasDoNavio[0].nome}` }))
   expect(screen.getByText('1 lugar escolhido')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: lugaresBuzios[0].nome }))
+  await userEvent.click(screen.getByRole('button', { name: `Favoritar ${lugaresBuzios[0].nome}` }))
   expect(screen.getByText('2 lugares escolhidos')).toBeInTheDocument()
-})
-
-it('limpar desmarca tudo', async () => {
-  render(<SelecaoFavoritos areas={todas} />)
-  const b = screen.getByRole('button', { name: areasDoNavio[0].nome })
-  await userEvent.click(b)
   await userEvent.click(screen.getByRole('button', { name: 'Limpar seleção' }))
-  expect(b).toHaveAttribute('aria-pressed', 'false')
   expect(screen.getByText('Nenhum lugar escolhido')).toBeInTheDocument()
 })
 
-it('mostra o aviso de roteiro em breve', () => {
+it('a palavra-marca e a rota são decorativas', () => {
+  const { container } = render(<SelecaoFavoritos areas={todas} />)
+  const marca = container.querySelector('.favoritos__marca')
+  expect(marca).toHaveAttribute('aria-hidden', 'true')
+  expect(marca).toHaveClass('exibicao')
+  expect(container.querySelector('.rota')).toHaveAttribute('aria-hidden', 'true')
+})
+
+it('em tela larga sem movimento reduzido cria parallax por scrub', () => {
+  const espiao = vi.spyOn(gsap, 'fromTo')
   render(<SelecaoFavoritos areas={todas} />)
-  expect(screen.getByText('Em breve: um roteiro com esses lugares.')).toBeInTheDocument()
+  expect(espiao).toHaveBeenCalledWith(
+    '.favoritos__coluna--b',
+    expect.anything(),
+    expect.objectContaining({ scrollTrigger: expect.objectContaining({ scrub: true }) }),
+  )
+})
+
+it('no celular ou com movimento reduzido não cria parallax', () => {
+  const espiao = vi.spyOn(gsap, 'fromTo')
+  mockMatchMedia(false, false)
+  render(<SelecaoFavoritos areas={todas} />)
+  mockMatchMedia(true, true)
+  render(<SelecaoFavoritos areas={todas} />)
+  const colunas = espiao.mock.calls.filter(([alvo]) => typeof alvo === 'string' && alvo.startsWith('.favoritos__'))
+  expect(colunas).toHaveLength(0)
 })

@@ -1,110 +1,106 @@
 .favoritos {
-  min-height: 100svh;
-  padding: 3rem 1rem 0;
-  background: var(--cor-fundo);
-  color: var(--cor-texto);
+  position: relative;
+  overflow: hidden;
+  padding: clamp(4rem, 10vw, 8rem) var(--margem) clamp(4rem, 8vw, 6rem);
+  background: var(--cor-base-clara);
+  color: var(--cor-texto-escuro);
   font-family: var(--fonte-texto);
 }
 
+.favoritos__marca {
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  z-index: 0;
+  margin: 0;
+  color: var(--cor-marca-dagua);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.favoritos__cabecalho,
+.favoritos__colunas,
+.favoritos__resumo {
+  position: relative;
+  z-index: 1;
+}
+
 .favoritos__titulo {
-  margin: 0 0 1.5rem;
+  margin: 0 0 0.75rem;
   font-family: var(--fonte-titulo);
-  font-size: clamp(1.75rem, 8vw, 2.75rem);
+  font-size: var(--t-titulo);
+  font-weight: 500;
+  line-height: 1;
 }
 
-.favoritos__subtitulo {
-  margin: 1.5rem 0 0.75rem;
-  font-family: var(--fonte-titulo);
-  font-size: 1.25rem;
+.favoritos__instrucao {
+  margin: 0 0 clamp(2rem, 6vw, 4rem);
+  color: var(--cor-texto-suave-escuro);
+  font-size: var(--t-texto);
 }
 
-.favoritos__grade {
+.favoritos__colunas {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 1.5rem;
+}
+
+/* Celular: as colunas somem do fluxo e os cartões seguem a ordem original. */
+.favoritos__coluna {
+  display: contents;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.favoritos__item {
-  position: relative;
+.favoritos__cartao {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  padding: 0;
+  background: #fff;
+}
+
+.favoritos__foto {
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
-  background: var(--cor-fundo-claro);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  background: var(--cor-marca-dagua);
 }
 
-.favoritos__item[aria-pressed='true'] {
-  border-color: var(--cor-destaque);
-}
-
-.favoritos__item:focus-visible {
-  outline: 2px solid var(--cor-destaque);
-  outline-offset: 2px;
-}
-
-.favoritos__miniatura {
+.favoritos__foto img {
   display: block;
-  aspect-ratio: 4 / 3;
-}
-
-.favoritos__miniatura img,
-.favoritos__miniatura .imagem-fallback {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.favoritos__miniatura .imagem-fallback {
+.favoritos__barra {
   display: flex;
-  padding: 0.5rem;
-  font-size: 0.9rem;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
 }
 
 .favoritos__nome {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.95rem;
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.favoritos__selo {
-  position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  background: var(--cor-destaque);
-  color: var(--cor-fundo);
-  font-weight: 700;
+.favoritos__legenda {
+  margin: 0.25rem 0 0;
+  color: var(--cor-texto-suave-escuro);
 }
 
-.favoritos__aviso {
-  margin: 2rem 0;
-  opacity: 0.8;
-}
-
-.favoritos__rodape {
-  position: sticky;
-  bottom: 0;
+.favoritos__resumo {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin: 0 -1rem;
-  padding: 0.75rem 1rem;
-  background: var(--cor-sombra);
-  border-top: 1px solid var(--cor-destaque);
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cor-marca-dagua);
 }
 
 .favoritos__contador {
@@ -112,13 +108,13 @@
 }
 
 .favoritos__limpar {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--cor-destaque);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: var(--cor-texto);
-  font: inherit;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
 }
 
 .favoritos__limpar:disabled {
@@ -126,17 +122,27 @@
   cursor: default;
 }
 
-@media (min-width: 768px) {
-  .favoritos {
-    padding: 4rem 2rem 0;
+@media (min-width: 48rem) {
+  .favoritos__colunas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(2rem, 8vw, 8rem);
+    align-items: start;
+    max-width: 64rem;
+    margin: 0 auto;
   }
 
-  .favoritos__grade {
-    grid-template-columns: repeat(4, 1fr);
+  .favoritos__coluna {
+    display: grid;
+    gap: clamp(2rem, 6vw, 5rem);
+    will-change: transform;
   }
 
-  .favoritos__rodape {
-    margin: 0 -2rem;
-    padding: 0.75rem 2rem;
+  /* A coluna da direita começa mais abaixo. */
+  .favoritos__coluna--b {
+    margin-top: clamp(6rem, 18vw, 14rem);
+  }
+
+  .favoritos__cartao {
+    order: 0 !important;
   }
 }

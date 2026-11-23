@@ -1,0 +1,49 @@
+.rota {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.rota__svg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(40vw, 28rem);
+  height: 100%;
+  transform: translateX(-50%);
+  overflow: visible;
+}
+
+.rota__linha {
+  fill: none;
+  stroke: var(--cor-acento);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+}
+
+.rota__marcador {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  color: var(--cor-texto-suave-escuro);
+}
+
+.rota__marcador::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--cor-acento);
+}
+
+.rota__marcador--inicio {
+  top: 1rem;
+}
+
+.rota__marcador--fim {
+  bottom: 1rem;
+}
