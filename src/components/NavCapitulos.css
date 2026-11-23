@@ -35,7 +35,8 @@
 }
 
 .nav-cap__aba[aria-current='true'] {
-  color: var(--cor-acento);
+  color: var(--cor-texto-escuro);
+  font-weight: 700;
 }
 
 .nav-cap__aba:hover,

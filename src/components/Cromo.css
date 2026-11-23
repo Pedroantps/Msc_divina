@@ -11,17 +11,20 @@
   line-height: 1;
   pointer-events: none;
   color: var(--cor-texto-claro);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.55);
   transition: color 0.3s ease;
 }
 
 .cromo__logo[data-tema-logo='escuro'] {
   color: var(--cor-texto-escuro);
+  text-shadow: none;
 }
 
 .cromo__rolar {
   position: fixed;
-  left: var(--margem);
-  bottom: var(--margem);
+  left: 4vw;
+  /* Acima do subtítulo e da palavra do Hero (ver --palavra-hero e --base-hero em Hero.css). */
+  bottom: calc(var(--base-hero, var(--margem)) + var(--palavra-hero, 0px) * 0.9 + 3rem);
   z-index: 50;
   color: var(--cor-texto-claro);
   opacity: 1;
@@ -35,10 +38,15 @@
   transition: opacity 0.3s ease, visibility 0s linear 0.3s;
 }
 
-@media (max-width: 640px) {
-  /* A barra de capítulos ocupa a largura toda embaixo: o indicador sobe acima dela. */
-  .cromo__rolar {
-    bottom: calc(var(--barra-altura) + var(--margem));
+@media (max-width: 600px) {
+  /* Só o quadrado: o rótulo continua como nome acessível, mas sai da vista. */
+  .cromo__rolar .cta__rotulo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -48,4 +56,30 @@
   .cromo__rolar--oculto {
     transition: none;
   }
+}
+
+/* Link "Pular para o conteúdo": visível só com foco do teclado. */
+.pular-conteudo {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  color: var(--cor-texto-escuro);
+  font-family: var(--fonte-titulo);
+  font-size: var(--t-rotulo);
+  font-weight: 700;
+  letter-spacing: var(--rotulo-espacamento);
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.pular-conteudo:focus {
+  transform: none;
+}
+
+#conteudo:focus {
+  outline: none;
 }

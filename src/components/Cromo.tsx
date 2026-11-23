@@ -33,11 +33,21 @@ export function Cromo({ ancoraInicial = 'capitulo-navio' }: Props) {
       setRolou(window.scrollY > window.innerHeight * LIMITE_ROLAGEM)
     }
     atualizar()
-    window.addEventListener('scroll', atualizar, { passive: true })
-    window.addEventListener('resize', atualizar)
+    // Agrupa os eventos de rolagem em um único cálculo por quadro.
+    let quadro = 0
+    const agendar = () => {
+      if (quadro) return
+      quadro = requestAnimationFrame(() => {
+        quadro = 0
+        atualizar()
+      })
+    }
+    window.addEventListener('scroll', agendar, { passive: true })
+    window.addEventListener('resize', agendar)
     return () => {
-      window.removeEventListener('scroll', atualizar)
-      window.removeEventListener('resize', atualizar)
+      if (quadro) cancelAnimationFrame(quadro)
+      window.removeEventListener('scroll', agendar)
+      window.removeEventListener('resize', agendar)
     }
   }, [])
 
