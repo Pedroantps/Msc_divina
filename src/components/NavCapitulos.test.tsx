@@ -24,7 +24,16 @@ beforeEach(() => {
   })
 })
 
+// A rolagem é agrupada por quadro: nos testes o quadro roda na hora.
+beforeEach(() => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    cb(0)
+    return 0
+  })
+})
+
 afterEach(() => {
+  vi.restoreAllMocks()
   document.body.innerHTML = ''
 })
 

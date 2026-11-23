@@ -10,7 +10,16 @@ function secao(id: string, tema: 'claro' | 'escuro', topo: number, base: number)
   return el
 }
 
+// A rolagem é agrupada por quadro: nos testes o quadro roda na hora.
+beforeEach(() => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    cb(0)
+    return 0
+  })
+})
+
 afterEach(() => {
+  vi.restoreAllMocks()
   document.body.innerHTML = ''
   Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
 })
@@ -53,4 +62,19 @@ it('o indicador some depois de 10% da janela e volta ao topo', () => {
     window.dispatchEvent(new Event('scroll'))
   })
   expect(indicador).not.toHaveClass('cromo__rolar--oculto')
+})
+
+it('agrupa vários eventos de rolagem em um único quadro', () => {
+  const fila: FrameRequestCallback[] = []
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    fila.push(cb)
+    return fila.length
+  })
+  render(<Cromo />)
+  act(() => {
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('scroll'))
+  })
+  expect(fila).toHaveLength(1)
 })

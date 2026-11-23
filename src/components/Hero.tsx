@@ -37,8 +37,8 @@ export function Hero({
       tl.fromTo('.hero__midia', { scale: 1, transformOrigin: origem }, { scale: 2.6, transformOrigin: origem, duration: 1 }, 0)
       tl.fromTo('.hero__titulo', { opacity: 1, yPercent: 0 }, { opacity: 0, yPercent: -25, duration: 0.3 }, 0)
       tl.fromTo('.hero__subtitulo', { opacity: 1 }, { opacity: 0, duration: 0.2 }, 0)
-      // Corta limpo para a próxima seção: tudo escurece até a cor-base-escura.
-      tl.fromTo('.hero__escurecer', { opacity: 0 }, { opacity: 1, duration: 0.2 }, 0.8)
+      // Corta limpo para a próxima seção: nos últimos ~15% da rolagem tudo escurece até a cor-base-escura.
+      tl.fromTo('.hero__escurecer', { opacity: 0 }, { opacity: 1, duration: 0.15 }, 0.85)
     },
     { scope: secaoRef, dependencies: [reduzido, alvo.x, alvo.y], revertOnUpdate: true },
   )
@@ -61,6 +61,7 @@ export function Hero({
             fetchpriority="high"
           />
         </div>
+        <div className="hero__degrade-topo" aria-hidden="true" />
         <div className="hero__degrade" aria-hidden="true" />
         <p className="hero__subtitulo rotulo">{subtitulo}</p>
         <h1 className="hero__titulo">
