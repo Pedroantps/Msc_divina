@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import type { ItemNumero } from '../data/numeros'
@@ -12,20 +12,19 @@ interface NumerosProps {
 export function Numeros({ itens }: NumerosProps) {
   const raizRef = useRef<HTMLUListElement>(null)
   const reduzido = useReducedMotion()
+  // null = mostra o valor final (padrão e movimento reduzido); array = contagem em andamento.
+  // O React é o único dono do texto: o GSAP só anima números e o estado os repassa.
+  const [exibidos, setExibidos] = useState<number[] | null>(null)
 
   useGSAP(
-    () => {
-      if (reduzido || !raizRef.current) return
-      const raiz = raizRef.current
-      const alvos = Array.from(raiz.querySelectorAll<HTMLElement>('.numeros__valor'))
-      alvos.forEach((el) => {
-        el.textContent = '0'
-      })
-      ScrollTrigger.create({
-        trigger: raiz,
+    (_contexto, contextSafe) => {
+      if (reduzido || !raizRef.current || !contextSafe) return
+      setExibidos(itens.map(() => 0))
+      const gatilho = ScrollTrigger.create({
+        trigger: raizRef.current,
         start: 'top 85%',
         once: true,
-        onEnter: () => {
+        onEnter: contextSafe(() => {
           itens.forEach((item, i) => {
             const contador = { v: 0 }
             gsap.to(contador, {
@@ -33,29 +32,34 @@ export function Numeros({ itens }: NumerosProps) {
               duration: 1,
               ease: 'power2.out',
               onUpdate: () => {
-                alvos[i].textContent = String(Math.round(contador.v))
+                const n = Math.round(contador.v)
+                setExibidos((atual) => (atual && atual[i] !== n ? atual.map((x, j) => (j === i ? n : x)) : atual))
               },
               onComplete: () => {
-                alvos[i].textContent = String(item.valor)
+                setExibidos((atual) => (atual ? atual.map((x, j) => (j === i ? item.valor : x)) : atual))
               },
             })
           })
-        },
+        }),
       })
+      return () => {
+        gatilho.kill()
+        setExibidos(null)
+      }
     },
     { scope: raizRef, dependencies: [reduzido, itens], revertOnUpdate: true },
   )
 
   return (
     <ul ref={raizRef} className="numeros" aria-label="Números do site">
-      {itens.map((item) => (
+      {itens.map((item, i) => (
         <li key={item.legenda} className="numeros__item">
           {/* O valor final fica no DOM para leitores de tela desde o início. */}
           <span className="numeros__sr">
             {item.valor} {item.legenda}
           </span>
           <span className="numeros__valor" aria-hidden="true">
-            {item.valor}
+            {exibidos ? (exibidos[i] ?? item.valor) : item.valor}
           </span>
           <span className="numeros__legenda" aria-hidden="true">
             {item.legenda}
