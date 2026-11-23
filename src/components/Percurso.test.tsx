@@ -132,6 +132,17 @@ describe('carga preguiçosa das faixas', () => {
     expect(imagens().map((i) => i.getAttribute('src'))).toEqual([areasDoNavio[0].faixa, areasDoNavio[1].faixa])
   })
 
+  it('observa com folga de 250% e, ao ativar uma parada, monta também a faixa da seguinte', () => {
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    const { container } = render(<Percurso areas={areasDoNavio} />)
+    expect(window.IntersectionObserver).toHaveBeenCalledWith(expect.any(Function), { rootMargin: '250% 0px' })
+    expect(imagens()).toHaveLength(0)
+    const gatilhos = criar.mock.calls.map(([c]) => c).filter((c) => c.start === 'top 10%')
+    act(() => gatilhos[2].onToggle!({ isActive: true } as ScrollTrigger))
+    expect(imagens().map((i) => i.getAttribute('src'))).toEqual([areasDoNavio[2].faixa, areasDoNavio[3].faixa])
+    expect(container.querySelectorAll('.percurso__giro img')).toHaveLength(2)
+  })
+
   it('a primeira faixa tem prioridade alta', () => {
     const { container } = render(<Percurso areas={areasDoNavio} />)
     act(() => {
@@ -185,6 +196,37 @@ describe('rolagem', () => {
 
     act(() => gatilhos[2].onToggle!({ isActive: false } as ScrollTrigger))
     expect(textos().some((t) => t.hasAttribute('data-ativa'))).toBe(false)
+  })
+
+  it('a última parada gira até o palco soltar e o texto dela some antes disso', () => {
+    const fromTo = vi.spyOn(gsap, 'fromTo')
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    render(<Percurso areas={areasDoNavio} />)
+    const giros = fromTo.mock.calls
+      .map(([, , v]) => (v as unknown as gsap.TweenVars).scrollTrigger as ScrollTrigger.Vars | undefined)
+      .filter((t) => t && t.scrub === true && t.end !== 'top top')
+    expect(giros).toHaveLength(areasDoNavio.length)
+    expect(giros.slice(0, -1).every((t) => t!.end === 'bottom top')).toBe(true)
+    expect(giros[giros.length - 1]!.end).toBe('bottom bottom')
+    const textos = criar.mock.calls.map(([c]) => c).filter((c) => c.start === 'top 10%')
+    expect(textos.slice(0, -1).every((t) => t.end === 'bottom 30%')).toBe(true)
+    expect(textos[textos.length - 1].end).toBe('bottom bottom')
+  })
+
+  it('o fade não usa gsap.set no autoAlpha da camada anterior: esconde o giro por classe', () => {
+    const set = vi.spyOn(gsap, 'set')
+    const fromTo = vi.spyOn(gsap, 'fromTo')
+    const { container } = render(<Percurso areas={areasDoNavio} />)
+    const fade = fromTo.mock.calls.find(([, de]) => (de as unknown as gsap.TweenVars).autoAlpha === 0)!
+    const gatilho = (fade[2] as unknown as gsap.TweenVars).scrollTrigger as ScrollTrigger.Vars
+    const giros = container.querySelectorAll('.percurso__giro')
+    act(() => gatilho.onLeave!({} as ScrollTrigger))
+    expect(giros[0]).toHaveClass('percurso__giro--oculto')
+    act(() => gatilho.onEnterBack!({} as ScrollTrigger))
+    expect(giros[0]).not.toHaveClass('percurso__giro--oculto')
+    act(() => gatilho.onRefresh!({ progress: 1 } as ScrollTrigger))
+    expect(giros[0]).toHaveClass('percurso__giro--oculto')
+    expect(set).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ autoAlpha: expect.anything() }))
   })
 
   it('foco por teclado numa parada fora da tela leva a rolagem até ela', async () => {

@@ -31,7 +31,7 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
   const [ativa, setAtiva] = useState<number | null>(null)
   const [tour, setTour] = useState<{ id: string; aberto: boolean }>({ id: areas[0]?.id ?? '', aberto: false })
 
-  // Monta a faixa de uma parada quando ela está a ~1,5 tela de distância.
+  // Monta a faixa de uma parada quando ela está a ~2,5 telas de distância.
   useEffect(() => {
     const el = raiz.current
     if (reduzido || !el || typeof IntersectionObserver === 'undefined') return
@@ -44,11 +44,15 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
         setCarregadas((atual) => (novas.every((i) => atual.has(i)) ? atual : new Set([...atual, ...novas])))
         for (const e of entradas) if (e.isIntersecting) obs.unobserve(e.target)
       },
-      { rootMargin: '150% 0px' },
+      { rootMargin: '250% 0px' },
     )
     el.querySelectorAll('.parada').forEach((s) => obs.observe(s))
     return () => obs.disconnect()
   }, [reduzido, areas.length])
+
+  // Parada ativa: a faixa dela e a da seguinte já contam como carregadas (a próxima não aparece vazia no fade).
+  const montada = (i: number) =>
+    carregadas.has(i) || (ativa !== null && typeof IntersectionObserver !== 'undefined' && (i === ativa || i === ativa + 1))
 
   useGSAP(
     () => {
@@ -57,7 +61,12 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
       const camadas = gsap.utils.toArray<HTMLElement>('.percurso__camada')
       const giros = gsap.utils.toArray<HTMLElement>('.percurso__giro')
 
+      const ultima = secoes.length - 1
+
       secoes.forEach((secao, i) => {
+        // O palco sticky solta quando o fim da última parada chega ao fim da tela: o giro e o
+        // texto dela terminam aí ('bottom bottom'), não 100svh depois.
+        const fim = i === ultima ? 'bottom bottom' : 'bottom top'
         const giro = giros[i]
         const camada = camadas[i]
         if (!giro || !camada) return
@@ -73,7 +82,7 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
             scrollTrigger: {
               trigger: secao,
               start: 'top top',
-              end: 'bottom top',
+              end: fim,
               scrub: true,
               invalidateOnRefresh: true,
               onToggle: (self) => {
@@ -87,7 +96,7 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
         ScrollTrigger.create({
           trigger: secao,
           start: 'top 10%',
-          end: 'bottom 30%',
+          end: i === ultima ? 'bottom bottom' : 'bottom 30%',
           onToggle: (self) => {
             if (self.isActive) setAtiva(i)
             else setAtiva((atual) => (atual === i ? null : atual))
@@ -96,8 +105,10 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
 
         if (i === 0) return
         // Fade curto da camada nova por cima da anterior (≈15% do trecho). A anterior sai da
-        // composição depois, para não manter 14 imagens grandes empilhadas na GPU.
-        const anterior = camadas[i - 1]
+        // composição depois, para não manter 14 imagens grandes empilhadas na GPU. Isso é feito
+        // por classe no giro (visibility), sem tocar no autoAlpha que o fade da própria camada controla.
+        const giroAnterior = giros[i - 1]
+        const ocultar = (oculto: boolean) => giroAnterior?.classList.toggle('percurso__giro--oculto', oculto)
         gsap.fromTo(
           camada,
           { autoAlpha: 0 },
@@ -109,16 +120,15 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
               start: `top ${FADE * ALTURA_PARADA * 100}%`,
               end: 'top top',
               scrub: true,
-              onLeave: () => {
-                if (anterior) gsap.set(anterior, { autoAlpha: 0 })
-              },
-              onEnterBack: () => {
-                if (anterior) gsap.set(anterior, { autoAlpha: 1 })
-              },
+              onLeave: () => ocultar(true),
+              onEnterBack: () => ocultar(false),
+              onRefresh: (self) => ocultar(self.progress >= 1),
             },
           },
         )
       })
+
+      return () => giros.forEach((g) => g.classList.remove('percurso__giro--oculto'))
     },
     { scope: raiz, dependencies: [reduzido, areas.length], revertOnUpdate: true },
   )
@@ -149,7 +159,7 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
           {areas.map((area, i) => (
             <div key={area.id} className="percurso__camada">
               <div className="percurso__giro">
-                {carregadas.has(i) && area.faixa && (
+                {montada(i) && area.faixa && (
                   <ImagemComFallback
                     className="percurso__faixa"
                     src={area.faixa}
@@ -161,6 +171,10 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
               </div>
             </div>
           ))}
+          <div
+            className="percurso__veu"
+            data-posicao={ativa !== null ? POSICOES[ativa % POSICOES.length] : undefined}
+          />
         </div>
       )}
 
