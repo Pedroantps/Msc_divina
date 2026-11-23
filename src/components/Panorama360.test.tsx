@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { suportaWebGL } from '../lib/suportaWebGL'
 import { Panorama360 } from './Panorama360'
@@ -7,6 +7,7 @@ import { Panorama360 } from './Panorama360'
 vi.mock('../lib/suportaWebGL', () => ({ suportaWebGL: vi.fn(() => true) }))
 vi.mock('@photo-sphere-viewer/core', () => ({ Viewer: vi.fn() }))
 vi.mock('@photo-sphere-viewer/core/index.css', () => ({}))
+vi.mock('@photo-sphere-viewer/gyroscope-plugin', () => ({ GyroscopePlugin: class GyroscopePlugin {} }))
 
 const ViewerMock = vi.mocked(Viewer) as unknown as ReturnType<typeof vi.fn>
 interface Obs {
@@ -17,13 +18,19 @@ interface Obs {
 let observers: Obs[] = []
 const disconnect = vi.fn()
 const destroy = vi.fn()
+const setPanorama = vi.fn(() => Promise.resolve(true))
+const giroToggle = vi.fn()
+const giroSuportado = vi.fn(() => Promise.resolve(true))
 const listeners: Record<string, () => void> = {}
+const giroListeners: Record<string, (e: { gyroscopeEnabled: boolean }) => void> = {}
 const original = window.IntersectionObserver
 
 beforeEach(() => {
   observers = []
   disconnect.mockClear()
   destroy.mockClear()
+  setPanorama.mockClear()
+  giroToggle.mockClear()
   ViewerMock.mockReset()
   for (const k of Object.keys(listeners)) delete listeners[k]
   ViewerMock.mockImplementation(function (config: { container: HTMLElement }) {
@@ -32,6 +39,14 @@ beforeEach(() => {
     ;(config.container as HTMLElement).appendChild(canvas)
     return {
       destroy,
+      setPanorama,
+      getPlugin: () => ({
+        isSupported: giroSuportado,
+        toggle: giroToggle,
+        addEventListener: (nome: string, fn: (e: { gyroscopeEnabled: boolean }) => void) => {
+          giroListeners[nome] = fn
+        },
+      }),
       addEventListener: (nome: string, fn: () => void) => {
         listeners[nome] = fn
       },
@@ -203,4 +218,98 @@ it('não cria o viewer se desmontar antes do import resolver', async () => {
   unmount()
   await new Promise((r) => setTimeout(r, 20))
   expect(ViewerMock).not.toHaveBeenCalled()
+})
+
+it('sem WebGL mostra um aviso curto junto da foto plana', async () => {
+  vi.mocked(suportaWebGL).mockReturnValue(false)
+  montar()
+  entrar()
+  expect(await screen.findByRole('status')).toHaveTextContent(/360°/)
+})
+
+describe('controlado por `ativo`', () => {
+  const tour = (props: Partial<React.ComponentProps<typeof Panorama360>> = {}) => (
+    <Panorama360
+      panorama="/pano/a.webp"
+      imagemPlana="/img/a.webp"
+      alt="Cena A"
+      yaw={10}
+      ativo
+      rolagemZoom
+      {...props}
+    />
+  )
+
+  it('não observa a tela: liga e desliga só pela prop', async () => {
+    const { rerender } = render(tour({ ativo: false }))
+    expect(observers).toHaveLength(0)
+    expect(ViewerMock).not.toHaveBeenCalled()
+    rerender(tour({ ativo: true }))
+    await waitFor(() =>
+      expect(ViewerMock).toHaveBeenCalledWith(
+        expect.objectContaining({ panorama: '/pano/a.webp', defaultYaw: '10deg', mousewheel: true }),
+      ),
+    )
+    rerender(tour({ ativo: false }))
+    expect(destroy).toHaveBeenCalled()
+    expect(screen.getByRole('img', { name: 'Cena A' })).toBeInTheDocument()
+  })
+
+  it('trocar panorama e yaw usa setPanorama sem recriar o viewer', async () => {
+    const { rerender } = render(tour())
+    await waitFor(() => expect(ViewerMock).toHaveBeenCalledTimes(1))
+    await screen.findByRole('group', { name: 'Cena A' })
+    expect(setPanorama).not.toHaveBeenCalled()
+    rerender(tour({ panorama: '/pano/b.webp', yaw: 36.9, alt: 'Cena B' }))
+    await waitFor(() =>
+      expect(setPanorama).toHaveBeenCalledWith(
+        '/pano/b.webp',
+        expect.objectContaining({ position: { yaw: '36.9deg', pitch: 0 } }),
+      ),
+    )
+    expect(ViewerMock).toHaveBeenCalledTimes(1)
+    expect(destroy).not.toHaveBeenCalled()
+  })
+
+  it('mousewheel fica desligado por padrão', async () => {
+    render(tour({ rolagemZoom: undefined }))
+    await waitFor(() => expect(ViewerMock).toHaveBeenCalledWith(expect.objectContaining({ mousewheel: false })))
+  })
+
+  it('o botão "Mover o celular" só aparece em tela de toque e liga o giroscópio', async () => {
+    const mm = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)' })) as unknown as typeof window.matchMedia
+    try {
+      render(tour({ giroscopio: true }))
+      const botao = await screen.findByRole('button', { name: 'Mover o celular' })
+      expect(ViewerMock).toHaveBeenCalledWith(expect.objectContaining({ plugins: expect.any(Array) }))
+      fireEvent.click(botao)
+      expect(giroToggle).toHaveBeenCalled()
+      act(() => giroListeners['gyroscope-updated']({ gyroscopeEnabled: true }))
+      expect(botao).toHaveAttribute('aria-pressed', 'true')
+    } finally {
+      window.matchMedia = mm
+    }
+  })
+
+  it('sem toque não carrega o giroscópio nem mostra o botão', async () => {
+    render(tour({ giroscopio: true }))
+    await screen.findByRole('group', { name: 'Cena A' })
+    expect(screen.queryByRole('button', { name: 'Mover o celular' })).not.toBeInTheDocument()
+    expect(ViewerMock).toHaveBeenCalledWith(expect.not.objectContaining({ plugins: expect.anything() }))
+  })
+
+  it('giroscópio sem suporte no aparelho não mostra o botão', async () => {
+    giroSuportado.mockResolvedValueOnce(false)
+    const mm = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)' })) as unknown as typeof window.matchMedia
+    try {
+      render(tour({ giroscopio: true }))
+      await screen.findByRole('group', { name: 'Cena A' })
+      await new Promise((r) => setTimeout(r, 20))
+      expect(screen.queryByRole('button', { name: 'Mover o celular' })).not.toBeInTheDocument()
+    } finally {
+      window.matchMedia = mm
+    }
+  })
 })
