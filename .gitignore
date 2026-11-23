@@ -14,3 +14,6 @@ dist-ssr
 .idea
 .DS_Store
 *.log
+
+# Saída do Playwright MCP
+.playwright-mcp/

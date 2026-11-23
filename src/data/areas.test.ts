@@ -4,13 +4,23 @@ import { lugaresBuzios } from './buzios'
 
 it('o conteúdo real é válido', () =>
   expect(validarAreas([...areasDoNavio, ...lugaresBuzios])).toEqual([]))
-it('tem entre 8 e 10 áreas do navio', () => {
+it('tem entre 8 e 16 áreas do navio', () => {
   expect(areasDoNavio.length).toBeGreaterThanOrEqual(8)
-  expect(areasDoNavio.length).toBeLessThanOrEqual(10)
+  expect(areasDoNavio.length).toBeLessThanOrEqual(16)
 })
-it('tem de 2 a 3 panoramas', () => {
-  const n = areasDoNavio.filter(a => a.panorama).length
-  expect(n).toBeGreaterThanOrEqual(2); expect(n).toBeLessThanOrEqual(3)
+it('toda área do navio tem 360° com pelo menos uma cena', () => {
+  for (const a of areasDoNavio) {
+    expect(a.panorama, a.id).toBeDefined()
+    expect(a.cenas?.length, a.id).toBeGreaterThan(0)
+  }
+})
+it('todo arquivo de imagem e panorama citado existe em public/', () => {
+  const existentes = new Set(
+    Object.keys(import.meta.glob('../../public/{img,pano}/*.webp')).map(k => k.replace('../../public', '')),
+  )
+  for (const a of [...areasDoNavio, ...lugaresBuzios])
+    for (const p of [a.imagem, ...(a.cenas ?? []).map(c => c.panorama)])
+      expect(existentes.has(p), p).toBe(true)
 })
 it('tem de 3 a 5 lugares em Búzios', () => {
   expect(lugaresBuzios.length).toBeGreaterThanOrEqual(3)

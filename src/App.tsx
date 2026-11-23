@@ -18,7 +18,7 @@ export default function App() {
           areas={areasDoNavio}
           renderMidia={(a) =>
             a.panorama ? (
-              <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} ancora={a.id} />
+              <Panorama360 panorama={a.panorama} imagemPlana={a.imagem} alt={a.nome} ancora={a.id} yaw={a.yaw} />
             ) : undefined
           }
         />

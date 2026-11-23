@@ -32,9 +32,11 @@ interface Panorama360Props {
   alt: string
   /** Id do elemento observado no lugar do próprio (ex.: a seção da área). */
   ancora?: string
+  /** Para onde a câmera olha ao abrir, em graus. */
+  yaw?: number
 }
 
-export function Panorama360({ panorama, imagemPlana, alt, ancora }: Panorama360Props) {
+export function Panorama360({ panorama, imagemPlana, alt, ancora, yaw = 0 }: Panorama360Props) {
   const raiz = useRef<HTMLDivElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const falhou = useRef(false)
@@ -102,6 +104,7 @@ export function Panorama360({ panorama, imagemPlana, alt, ancora }: Panorama360P
           mousewheel: false,
           lang: LANG_PT,
           defaultZoomLvl: 0,
+          defaultYaw: `${yaw}deg`,
         })
         viewer = v
         v.addEventListener('panorama-error', () => {
@@ -123,7 +126,7 @@ export function Panorama360({ panorama, imagemPlana, alt, ancora }: Panorama360P
       viewer?.destroy()
       viewer = null
     }
-  }, [visivel, panorama])
+  }, [visivel, panorama, yaw])
 
   return (
     <div ref={raiz} className="panorama">
