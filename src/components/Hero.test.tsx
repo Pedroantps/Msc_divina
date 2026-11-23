@@ -30,10 +30,21 @@ it('mostra o tÃ­tulo e a foto com texto alternativo', () => {
   expect(screen.getByRole('img', { name: 'O navio MSC Divina visto de fora' })).toBeInTheDocument()
 })
 
-it('com movimento reduzido marca a seÃ§Ã£o como estÃ¡tica', () => {
+it('a palavra visível é Divina, o selo é MSC e a seção é escura', () => {
+  mockMatchMedia(false)
+  render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
+  const titulo = screen.getByRole('heading', { level: 1 })
+  expect(titulo.querySelector('.exibicao')).toHaveTextContent('Divina')
+  expect(titulo.querySelector('.rotulo')).toHaveTextContent('MSC')
+  expect(screen.getByTestId('hero')).toHaveAttribute('data-tema', 'escuro')
+  expect(document.querySelector('.hero__escurecer')).toBeInTheDocument()
+})
+
+it('com movimento reduzido marca a seção como estática e não anima', () => {
   mockMatchMedia(true)
   render(<Hero imagem="/img/divina-externa.webp" alvo={{ x: 62, y: 48 }} />)
   expect(screen.getByTestId('hero')).toHaveAttribute('data-estatico', 'true')
+  expect(gsap.getTweensOf('.hero__titulo')).toHaveLength(0)
 })
 
 it('sem movimento reduzido cria a timeline com scrollTrigger', () => {

@@ -1,13 +1,12 @@
 .hero {
   height: 300svh;
-  background: var(--cor-fundo);
+  background: var(--cor-base-escura);
+  color: var(--cor-texto-claro);
 }
 
 .hero:not([data-estatico='true']) {
-  /* Fica por cima das áreas (que sobem por baixo dele) e não captura cliques. */
   position: relative;
   z-index: 1;
-  pointer-events: none;
 }
 
 .hero[data-estatico='true'] {
@@ -27,6 +26,10 @@
   will-change: transform;
 }
 
+.hero[data-estatico='true'] .hero__midia {
+  will-change: auto;
+}
+
 .hero__img {
   display: block;
   width: 100%;
@@ -34,20 +37,56 @@
   object-fit: cover;
 }
 
-.hero[data-estatico='true'] .hero__midia {
-  will-change: auto;
-}
-
+/* Gradiente só na base: garante contraste da palavra sem escurecer a foto toda. */
 .hero__degrade {
   position: absolute;
   inset: auto 0 0 0;
-  padding: 4rem 1.5rem 3rem;
-  background: linear-gradient(to top, var(--cor-sombra), transparent);
+  height: 55%;
+  background: linear-gradient(to top, rgb(14 14 16 / 0.75), transparent);
+  pointer-events: none;
+}
+
+.hero__subtitulo {
+  position: absolute;
+  left: var(--margem);
+  bottom: calc(var(--margem) + 17vw * 0.9);
+  margin: 0;
+  color: var(--cor-texto-claro);
 }
 
 .hero__titulo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--margem);
   margin: 0;
-  font-family: var(--fonte-titulo);
-  font-size: clamp(2.5rem, 12vw, 5rem);
-  color: var(--cor-texto);
+  padding: 0 5vw;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--cor-texto-claro);
+  font-weight: inherit;
+}
+
+.hero__palavra {
+  /* Unbounded é larga: 17vw mantém "Divina" numa linha só, ~90% da largura. */
+  font-size: 17vw;
+  white-space: nowrap;
+  display: block;
+}
+
+.hero__selo {
+  flex: none;
+  padding-bottom: 0.4em;
+}
+
+/* Cobre a seção inteira e leva tudo à cor-base-escura no fim da rolagem. */
+.hero__escurecer {
+  position: absolute;
+  inset: 0;
+  background: var(--cor-base-escura);
+  opacity: 0;
+  pointer-events: none;
 }
