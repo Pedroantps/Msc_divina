@@ -40,6 +40,11 @@
   text-align: center;
 }
 
+.panorama__falha {
+  position: absolute;
+  inset: 0;
+}
+
 /* Liga o giroscópio: só aparece em tela de toque com o sensor disponível. */
 .panorama__giro {
   position: absolute;

@@ -15,6 +15,7 @@ vi.mock('@photo-sphere-viewer/gyroscope-plugin', () => ({ GyroscopePlugin: class
 const ViewerMock = vi.mocked(Viewer) as unknown as ReturnType<typeof vi.fn>
 const destroy = vi.fn()
 const setPanorama = vi.fn(() => Promise.resolve(true))
+const ouvintes: Record<string, () => void> = {}
 
 const spa = areasDoNavio.find((a) => a.id === 'aurea-spa')!
 const recepcao = areasDoNavio.find((a) => a.id === 'recepcao')!
@@ -26,7 +27,13 @@ beforeEach(() => {
   ViewerMock.mockReset()
   ViewerMock.mockImplementation(function (config: { container: HTMLElement }) {
     config.container.appendChild(document.createElement('canvas'))
-    return { destroy, setPanorama, addEventListener: () => {} }
+    return {
+      destroy,
+      setPanorama,
+      addEventListener: (nome: string, fn: () => void) => {
+        ouvintes[nome] = fn
+      },
+    }
   })
   vi.mocked(suportaWebGL).mockReturnValue(true)
   // jsdom não implementa showModal/close.
@@ -136,6 +143,38 @@ describe('TourArea', () => {
     await usuario.keyboard('{ArrowLeft}{ArrowLeft}')
     await waitFor(() => expect(setPanorama).toHaveBeenLastCalledWith(cenas[cenas.length - 1].panorama, expect.anything()))
     expect(ViewerMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignora ←/→ com Alt, Ctrl ou Meta', async () => {
+    const usuario = await abrir()
+    await usuario.keyboard('{Alt>}{ArrowRight}{/Alt}{Control>}{ArrowRight}{/Control}{Meta>}{ArrowLeft}{/Meta}')
+    expect(setPanorama).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: cenas[0].nome })).toBeInTheDocument()
+  })
+
+  it('ignora ←/→ já tratado por outro elemento (defaultPrevented)', async () => {
+    await abrir()
+    const evento = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true, bubbles: true })
+    evento.preventDefault()
+    act(() => {
+      document.dispatchEvent(evento)
+    })
+    expect(setPanorama).not.toHaveBeenCalled()
+  })
+
+  it('um panorama que falha numa troca de cena não derruba o tour: só aquela cena cai para a foto', async () => {
+    const usuario = await abrir()
+    await usuario.click(screen.getByRole('button', { name: cenas[1].nome }))
+    await waitFor(() => expect(setPanorama).toHaveBeenCalledTimes(1))
+    act(() => ouvintes['panorama-error']())
+    expect(destroy).not.toHaveBeenCalled()
+    expect(screen.getByRole('img', { name: cenas[1].nome })).toHaveAttribute('src', `/miniatura/${cenas[1].id}.webp`)
+    expect(screen.getByRole('status')).toHaveTextContent(/360°/)
+    await usuario.click(screen.getByRole('button', { name: cenas[2].nome }))
+    await waitFor(() => expect(setPanorama).toHaveBeenCalledTimes(2))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(ViewerMock).toHaveBeenCalledTimes(1)
+    expect(destroy).not.toHaveBeenCalled()
   })
 
   it('os botões anterior e próxima trocam de cena', async () => {
