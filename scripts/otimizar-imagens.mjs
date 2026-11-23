@@ -1,4 +1,5 @@
 // Uso: npm run imagens
+// Também gera public/img/640/<nome>.webp (640px de largura, até 70 KB) a partir de public/img/*.webp.
 // Lê fotos-originais/{img,pano}/*.{jpg,jpeg,png,heic} e grava public/{img,pano}/<nome-kebab>.webp
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, writeFile } from 'node:fs/promises'
@@ -63,7 +64,33 @@ async function otimizar(arquivo, tipo, config, gravados) {
   return 'ok'
 }
 
+const LARGURA_MINI = 640
+const LIMITE_MINI = 70 * 1024
+
+// Variante de 640px para cartões pequenos: public/img/640/<nome>.webp, a partir de public/img/*.webp.
+async function gerarVariantes640() {
+  const origem = path.join(SAIDA, 'img')
+  if (!existsSync(origem)) return
+  const destinoPasta = path.join(origem, String(LARGURA_MINI))
+  await mkdir(destinoPasta, { recursive: true })
+  for (const arquivo of (await readdir(origem)).filter((f) => /\.webp$/i.test(f)).sort()) {
+    let melhor
+    for (let qualidade = 80; qualidade >= 40; qualidade -= 5) {
+      melhor = await sharp(path.join(origem, arquivo))
+        .resize({ width: LARGURA_MINI, withoutEnlargement: true })
+        .webp({ quality: qualidade })
+        .toBuffer()
+      if (melhor.length <= LIMITE_MINI) break
+    }
+    await writeFile(path.join(destinoPasta, arquivo), melhor)
+    const kb = (melhor.length / 1024).toFixed(0)
+    console.log(`img/${LARGURA_MINI}/${arquivo}  ${kb} KB`)
+    if (melhor.length > LIMITE_MINI) console.warn(`AVISO: img/${LARGURA_MINI}/${arquivo} ficou com ${kb} KB, acima de 70 KB`)
+  }
+}
+
 async function main() {
+  await gerarVariantes640()
   if (!existsSync(ENTRADA)) {
     console.log('Pasta fotos-originais/ não existe. Crie fotos-originais/img e fotos-originais/pano e coloque as fotos lá.')
     return

@@ -24,6 +24,13 @@ it('repassa a className para a imagem e para o fallback', () => {
   expect(screen.getByRole('img')).toHaveClass('x')
 })
 
+it('repassa srcSet e sizes para a imagem', () => {
+  render(<ImagemComFallback src="/a.webp" alt="Teatro" srcSet="/p.webp 640w, /a.webp 1920w" sizes="50vw" />)
+  const img = screen.getByRole('img')
+  expect(img).toHaveAttribute('srcset', '/p.webp 640w, /a.webp 1920w')
+  expect(img).toHaveAttribute('sizes', '50vw')
+})
+
 it('carrega de forma preguiçosa e assíncrona por padrão', () => {
   render(<ImagemComFallback src="/a.webp" alt="Teatro" />)
   const img = screen.getByRole('img')
