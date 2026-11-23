@@ -47,3 +47,11 @@ it('é um footer escuro com a assinatura e o ano', () => {
   expect(rodape).toHaveTextContent(String(new Date().getFullYear()))
   expect(rodape).toHaveTextContent('MSC Divina')
 })
+
+it('os links externos usam só uma seta decorativa, sem o quadrado do CTA', () => {
+  const { container } = render(<Rodape areas={todas} />)
+  expect(container.querySelector('.rodape__links .cta__quadrado')).toBeNull()
+  const setas = container.querySelectorAll('.rodape__links .rodape__seta')
+  expect(setas).toHaveLength(3)
+  setas.forEach((s) => expect(s).toHaveAttribute('aria-hidden', 'true'))
+})

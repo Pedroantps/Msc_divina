@@ -5,6 +5,9 @@ import { lugaresBuzios } from '../data/buzios'
 import { gsap } from '../lib/gsap'
 import { Buzios } from './Buzios'
 
+// Arquivos reais de public/img/640 (só os nomes).
+const variantes640 = Object.keys(import.meta.glob('../../public/img/640/*.webp')).map((c) => c.split('/').pop())
+
 const original = window.matchMedia
 
 function mockMatchMedia(matches: boolean) {
@@ -61,6 +64,22 @@ it('mostra um bloco por lugar, com id, frase, nome, descrição e foto', () => {
     expect(screen.getByRole('heading', { level: 3, name: l.nome })).toBeInTheDocument()
     expect(bloco.querySelector('img')).toHaveAttribute('src', l.imagem)
   })
+})
+
+it('as fotos dos lugares têm srcSet com a variante de 640px que existe em disco', () => {
+  mockMatchMedia(false)
+  montar()
+  lugaresBuzios.forEach((l) => {
+    const srcset = document.getElementById(l.id)!.querySelector('img')!.getAttribute('srcset') ?? ''
+    const mini = /(\/img\/640\/[^\s]+)\s+640w/.exec(srcset)?.[1]
+    expect(mini).toBeTruthy()
+    expect(variantes640).toContain(mini!.split('/').pop())
+  })
+})
+
+it('a frase de Orla Bardot usa hífen não separável em beira‑mar', () => {
+  const orla = lugaresBuzios.find((l) => l.id === 'orla-bardot')!
+  expect(orla.frase).toContain('beira‑mar')
 })
 
 it('mostra a fileira de números do capítulo', () => {

@@ -24,7 +24,7 @@
 
 .numeros__valor {
   font-family: var(--fonte-titulo);
-  font-weight: 300;
+  font-weight: 400;
   font-size: clamp(3rem, 7vw, 6rem);
   line-height: 1;
   letter-spacing: -0.03em;

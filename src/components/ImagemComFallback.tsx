@@ -5,6 +5,8 @@ interface ImagemComFallbackProps {
   src: string
   alt: string
   className?: string
+  srcSet?: string
+  sizes?: string
   loading?: 'lazy' | 'eager'
   decoding?: 'async' | 'sync' | 'auto'
   /** Atributo DOM em minúsculas: o React 18 não conhece `fetchPriority`. */
@@ -15,6 +17,8 @@ export function ImagemComFallback({
   src,
   alt,
   className,
+  srcSet,
+  sizes,
   loading = 'lazy',
   decoding = 'async',
   fetchpriority,
@@ -45,6 +49,8 @@ export function ImagemComFallback({
     <img
       className={className}
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={alt}
       loading={loading}
       decoding={decoding}

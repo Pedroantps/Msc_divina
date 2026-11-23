@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { Area } from '../data/tipos'
 import { areasDoNavio } from '../data/areas'
 import { capas } from '../data/capas'
@@ -6,6 +6,7 @@ import { calcularNumeros } from '../data/numeros'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { ImagemComFallback } from './ImagemComFallback'
+import { srcSetDe } from '../lib/imagens'
 import { Numeros } from './Numeros'
 import './Buzios.css'
 
@@ -47,7 +48,7 @@ export function Buzios({ lugares, capa = capas.buzios, id = 'capitulo-buzios' }:
   )
 
   // Números do capítulo: áreas e cenas do navio mais os lugares desta lista.
-  const numeros = calcularNumeros(areasDoNavio, lugares)
+  const numeros = useMemo(() => calcularNumeros(areasDoNavio, lugares), [lugares])
 
   return (
     <section
@@ -80,7 +81,13 @@ export function Buzios({ lugares, capa = capas.buzios, id = 'capitulo-buzios' }:
             className={`buzios__lugar${i % 2 === 1 ? ' buzios__lugar--invertido' : ''}`}
           >
             <div className="buzios__foto">
-              <ImagemComFallback className="buzios__foto-img" src={lugar.imagem} alt={lugar.nome} />
+              <ImagemComFallback
+                className="buzios__foto-img"
+                src={lugar.imagem}
+                srcSet={srcSetDe(lugar.imagem)}
+                sizes="(max-width: 760px) 100vw, 45vw"
+                alt={lugar.nome}
+              />
             </div>
             <div className="buzios__corpo">
               <p className="buzios__frase">{lugar.frase ?? lugar.nome}</p>

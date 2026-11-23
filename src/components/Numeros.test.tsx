@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { gsap } from '../lib/gsap'
+import { gsap, ScrollTrigger } from '../lib/gsap'
 import { Numeros } from './Numeros'
 
 const original = window.matchMedia
@@ -47,6 +47,25 @@ it('com movimento reduzido mostra o valor final direto e não anima', () => {
   const valores = Array.from(container.querySelectorAll('.numeros__valor')).map((e) => e.textContent)
   expect(valores).toEqual(['14', '35', '18', '4'])
   expect(espiao).not.toHaveBeenCalled()
+})
+
+it('o onEnter conta de 0 até o valor final', () => {
+  mockMatchMedia(false)
+  let aoEntrar: (() => void) | undefined
+  const criar = ScrollTrigger.create.bind(ScrollTrigger)
+  vi.spyOn(ScrollTrigger, 'create').mockImplementation((vars) => {
+    aoEntrar = vars.onEnter as () => void
+    return criar({ ...vars, trigger: undefined, onEnter: undefined })
+  })
+  const { container } = render(<Numeros itens={itens} />)
+  const valores = () => Array.from(container.querySelectorAll('.numeros__valor')).map((e) => e.textContent)
+  expect(valores()).toEqual(['0', '0', '0', '0'])
+  expect(aoEntrar).toBeTypeOf('function')
+  act(() => aoEntrar!())
+  act(() => {
+    gsap.globalTimeline.totalTime(gsap.globalTimeline.totalTime() + 2)
+  })
+  expect(valores()).toEqual(['14', '35', '18', '4'])
 })
 
 it('sem movimento reduzido parte de 0 e mantém o valor final acessível', () => {

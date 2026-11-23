@@ -1,5 +1,4 @@
 import type { Area } from '../data/tipos'
-import { CtaAcento } from './CtaAcento'
 import { Creditos } from './Creditos'
 import './Rodape.css'
 
@@ -30,7 +29,12 @@ export function Rodape({ areas, creditosExtras = [] }: RodapeProps) {
           <ul className="rodape__links">
             {LINKS.map((l) => (
               <li key={l.href}>
-                <CtaAcento rotulo={l.rotulo} icone="seta-externa" href={l.href} externo />
+                <a className="rodape__link rotulo" href={l.href} target="_blank" rel="noopener noreferrer">
+                  {l.rotulo}
+                  <span className="rodape__seta" aria-hidden="true">
+                    ↗
+                  </span>
+                </a>
               </li>
             ))}
           </ul>

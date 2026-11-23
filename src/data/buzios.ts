@@ -9,7 +9,7 @@ export const lugaresBuzios: LugarBuzios[] = [
     descricao: 'Rua central de Búzios, com restaurantes, bares e lojas.',
     imagem: '/img/rua-das-pedras.webp', credito: 'Foto: Fulviusbsas, Wikimedia Commons (CC BY-SA 3.0)' },
   { id: 'orla-bardot', nome: 'Orla Bardot', categoria: 'buzios',
-    frase: 'Uma caminhada à beira-mar',
+    frase: 'Uma caminhada à beira‑mar',
     descricao: 'Passeio à beira-mar, bom para caminhar no fim da tarde.',
     imagem: '/img/orla-bardot.webp', credito: 'Foto: Fulviusbsas, Wikimedia Commons (CC BY-SA 3.0)' },
   { id: 'praia-de-geriba', nome: 'Praia de Geribá', categoria: 'buzios',
