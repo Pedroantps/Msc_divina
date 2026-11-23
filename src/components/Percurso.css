@@ -1,0 +1,212 @@
+/*
+ * Capítulo do navio. Altura total = número de áreas x 150svh: o palco sticky (100svh)
+ * fica fixo enquanto as seções das paradas, puxadas para cima do palco, rolam por cima.
+ */
+.percurso {
+  position: relative;
+}
+
+.percurso__palco {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--cor-base-escura);
+}
+
+.percurso__camada {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--cor-base-escura);
+}
+
+/* A faixa é cilíndrica (3:1) e tem a altura da tela: a largura excedente é o que desliza. */
+.percurso__giro {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  min-width: 100%;
+  aspect-ratio: 3 / 1;
+}
+
+.percurso__faixa {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sobe as seções por cima do palco (que ocupa 100svh no fluxo). */
+.percurso__paradas {
+  position: relative;
+  margin-top: -100svh;
+}
+
+.parada {
+  position: relative;
+  min-height: 150svh;
+}
+
+/*
+ * Texto da parada: fica fixo na tela e só aparece enquanto a parada está ativa
+ * (o Percurso marca data-ativa). Posição alterna por índice: esquerda, centro-topo, direita.
+ */
+.parada__texto {
+  position: fixed;
+  z-index: 1;
+  isolation: isolate;
+  width: min(34rem, calc(100vw - 2 * var(--margem)));
+  opacity: 0;
+  transform: translateY(1.5rem);
+  pointer-events: none;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.parada__texto[data-ativa='true'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Gradiente local atrás do texto, para contraste sobre qualquer foto. */
+.parada__texto::before {
+  content: '';
+  position: absolute;
+  inset: -4rem -5rem;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0.35) 45%, transparent 72%);
+  pointer-events: none;
+}
+
+.parada__texto[data-posicao='esquerda'] {
+  left: var(--margem);
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.parada__texto[data-posicao='centro'] {
+  left: 50%;
+  top: 16svh;
+  translate: -50% 0;
+  text-align: center;
+}
+
+.parada__texto[data-posicao='centro'] .parada__cta {
+  margin-inline: auto;
+}
+
+.parada__texto[data-posicao='direita'] {
+  right: var(--margem);
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.parada__titulo {
+  margin: 0 0 1rem;
+  font-size: var(--t-titulo);
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.parada__meta {
+  margin: 0 0 0.375rem;
+  color: var(--cor-texto-suave-claro);
+}
+
+.parada__cta {
+  display: flex;
+  width: max-content;
+  margin-top: 1.5rem;
+}
+
+.parada__descricao {
+  margin: 0.75rem 0 0;
+  color: var(--cor-texto-suave-claro);
+}
+
+/* Celular: o texto vira um bloco no terço inferior, acima da barra de capítulos. */
+@media (max-width: 700px) {
+  .parada__texto,
+  .parada__texto[data-posicao] {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    translate: none;
+    width: auto;
+    padding: 4rem var(--margem) calc(var(--barra-altura) + var(--margem));
+    text-align: left;
+  }
+
+  .parada__texto::before {
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.85) 30%, transparent);
+  }
+
+  .parada__texto[data-posicao='centro'] .parada__cta {
+    margin-inline: 0;
+  }
+
+  .parada__titulo {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Movimento reduzido: lista vertical estática, uma área por vez, com a foto plana. */
+.percurso[data-estatico='true'] {
+  padding-block: calc(var(--margem) * 2);
+}
+
+.percurso__lista {
+  display: grid;
+  gap: calc(var(--margem) * 2);
+  padding-inline: var(--margem);
+}
+
+.percurso[data-estatico='true'] .parada {
+  display: grid;
+  gap: 1.5rem;
+  min-height: 0;
+  max-width: 64rem;
+  margin-inline: auto;
+}
+
+.parada__foto {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--cor-base-escura);
+}
+
+.parada__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.percurso[data-estatico='true'] .parada__texto {
+  position: static;
+  width: auto;
+  max-width: 38rem;
+  padding: 0;
+  opacity: 1;
+  transform: none;
+  translate: none;
+  pointer-events: auto;
+  transition: none;
+  text-align: left;
+}
+
+.percurso[data-estatico='true'] .parada__texto::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parada__texto {
+    transition: none;
+  }
+}
