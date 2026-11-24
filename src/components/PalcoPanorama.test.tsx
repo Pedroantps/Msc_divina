@@ -9,7 +9,7 @@ import { PalcoPanorama } from './PalcoPanorama'
 vi.mock('../lib/camera/motor', () => ({ criarMotor: vi.fn() }))
 
 const criarMotorMock = vi.mocked(criarMotor)
-const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), liberar: vi.fn(), destruir: vi.fn() }
+const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), liberar: vi.fn(), definirDpr: vi.fn(), destruir: vi.fn() }
 let opcoesRecebidas: OpcoesMotor | undefined
 
 /** ResizeObserver falso: guarda o callback para o teste disparar. */
@@ -127,6 +127,14 @@ describe('PalcoPanorama', () => {
     )
     expect(motor.redimensionar).toHaveBeenCalledWith(800, 600)
     expect(criarMotorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('mudar o dpr não recria o motor e chama definirDpr', () => {
+    const { rerender } = montar()
+    rerender(<PalcoPanorama ref={createRef()} panoramas={panoramas} posteres={posteres} dpr={1} aoFalhar={vi.fn()} />)
+    expect(criarMotorMock).toHaveBeenCalledTimes(1)
+    expect(motor.destruir).not.toHaveBeenCalled()
+    expect(motor.definirDpr).toHaveBeenLastCalledWith(1)
   })
 
   it('desmontar chama destruir', () => {

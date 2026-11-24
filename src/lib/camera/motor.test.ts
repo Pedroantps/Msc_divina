@@ -303,4 +303,17 @@ describe('criarMotor', () => {
       expect(quadros.size).toBe(1)
     })
   })
+
+  it('definirDpr ajusta o pixel ratio e redesenha sem recriar o renderer', () => {
+    const { motor, renderer } = montar()
+    motor.definirEstado(estado(0))
+    rodarQuadros()
+    motor.definirDpr(2)
+    expect(renderer.setPixelRatio).toHaveBeenLastCalledWith(2)
+    expect(quadros.size).toBe(1)
+    expect(renderers).toHaveLength(1)
+    rodarQuadros()
+    motor.definirDpr(2)
+    expect(quadros.size).toBe(0)
+  })
 })

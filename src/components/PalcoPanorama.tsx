@@ -34,10 +34,12 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
   const aoFalharAtual = useRef(aoFalhar)
   const posteresAtuais = useRef(posteres)
   const panoramasAtuais = useRef(panoramas)
+  const dprAtual = useRef(dpr)
   useEffect(() => {
     aoFalharAtual.current = aoFalhar
     posteresAtuais.current = posteres
     panoramasAtuais.current = panoramas
+    dprAtual.current = dpr
   })
 
   const chavePanoramas = panoramas.join('|')
@@ -48,7 +50,7 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
     let vivo: Motor
     try {
       vivo = criarMotor(el, panoramasAtuais.current, {
-        dpr,
+        dpr: dprAtual.current,
         aoFalhar: () => aoFalharAtual.current(),
         aoPronto: (pronto) => el.classList.toggle(CLASSE_PRONTO, pronto),
       })
@@ -75,7 +77,12 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
       motor.current = null
       el.classList.remove(CLASSE_PRONTO)
     }
-  }, [chavePanoramas, dpr])
+  }, [chavePanoramas])
+
+  // Mudar o dpr só ajusta o renderer: recriar o motor perderia as texturas já na GPU.
+  useEffect(() => {
+    motor.current?.definirDpr(dpr)
+  }, [dpr])
 
   useImperativeHandle(
     ref,

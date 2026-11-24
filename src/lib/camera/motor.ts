@@ -8,6 +8,8 @@ import type { EstadoCamera, Vista } from './tipos'
 export interface Motor {
   definirEstado(e: EstadoCamera): void
   redimensionar(l: number, a: number): void
+  /** Troca a densidade de pixels (ex.: janela levada para outro monitor) sem recriar o contexto. */
+  definirDpr(dpr: number): void
   /** Solta as texturas (capítulo fora da tela); o próximo definirEstado recarrega. */
   liberar(): void
   destruir(): void
@@ -95,7 +97,8 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     alpha: true,
     powerPreference: 'high-performance',
   })
-  renderer.setPixelRatio(opcoes.dpr)
+  let dpr = opcoes.dpr
+  renderer.setPixelRatio(dpr)
   renderer.setClearColor(0x000000, 0)
   renderer.autoClear = false
 
@@ -234,6 +237,12 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
         c.camera.aspect = l / a
         c.camera.updateProjectionMatrix()
       }
+      agendar()
+    },
+    definirDpr(novo) {
+      if (novo === dpr) return
+      dpr = novo
+      renderer.setPixelRatio(dpr)
       agendar()
     },
     liberar() {
