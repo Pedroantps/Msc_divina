@@ -81,11 +81,14 @@ describe('PalcoPanorama', () => {
     expect(poster.getAttribute('src')).toBe(posteres[2])
   })
 
-  it('aoFalhar é chamado em webglcontextlost', () => {
-    const { aoFalhar } = montar()
-    expect(aoFalhar).not.toHaveBeenCalled()
+  it('a falha do motor chega ao aoFalhar mais recente, sem recriar o motor', () => {
+    const { aoFalhar, rerender } = montar()
+    const novo = vi.fn()
+    rerender(<PalcoPanorama ref={createRef()} panoramas={panoramas} posteres={posteres} dpr={2} aoFalhar={novo} />)
+    expect(criarMotorMock).toHaveBeenCalledTimes(1)
     opcoesRecebidas!.aoFalhar()
-    expect(aoFalhar).toHaveBeenCalledTimes(1)
+    expect(novo).toHaveBeenCalledTimes(1)
+    expect(aoFalhar).not.toHaveBeenCalled()
   })
 
   it('criarMotor que lança chama aoFalhar e mantém o pôster', () => {

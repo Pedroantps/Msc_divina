@@ -2,6 +2,7 @@ import { MathUtils, Mesh, PerspectiveCamera, Scene, SphereGeometry, Texture, Vec
 import type { ShaderMaterial } from 'three'
 import { avancoDoFov, criarCarregadorTextura, criarMaterialPanorama, descartarTextura } from './shader'
 import { GerenteTexturas } from './texturas'
+import type { Carregador } from './texturas'
 import type { EstadoCamera, Vista } from './tipos'
 
 export interface Motor {
@@ -16,6 +17,8 @@ export interface OpcoesMotor {
   aoFalhar: () => void
   /** Avisa se a textura da cena atual (`a`) está na tela; enquanto não estiver, vale o pôster. */
   aoPronto?: (pronto: boolean) => void
+  /** Carregador das texturas; o padrão é `fetch` + `createImageBitmap` (injetável nos testes). */
+  carregador?: Carregador<Texture>
 }
 
 /** Uma vista desenhável: câmera própria e esfera com o material do panorama. */
@@ -80,7 +83,7 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
 
   const gerente = new GerenteTexturas<Texture>(
     urls,
-    criarCarregadorTextura(renderer.capabilities.getMaxAnisotropy()),
+    opcoes.carregador ?? criarCarregadorTextura(renderer.capabilities.getMaxAnisotropy()),
     descartarTextura,
   )
 
