@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { escolherCapacidade, useCapacidade3D, type SinaisDispositivo } from './useCapacidade3D'
 
@@ -36,5 +36,19 @@ describe('useCapacidade3D', () => {
   it('em jsdom, sem WebGL, devolve sem3d', () => {
     const { result } = renderHook(() => useCapacidade3D())
     expect(result.current).toBe('sem3d')
+  })
+})
+
+describe('useCapacidade3D com WebGL', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('sonda com um único contexto e o solta depois de ler', () => {
+    const loseContext = vi.fn()
+    const gl = { MAX_TEXTURE_SIZE: 1, getParameter: () => 16384, getExtension: () => ({ loseContext }) }
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(gl as never)
+    const { result } = renderHook(() => useCapacidade3D())
+    expect(getContext).toHaveBeenCalledTimes(1)
+    expect(loseContext).toHaveBeenCalledTimes(1)
+    expect(['alta', 'media']).toContain(result.current)
   })
 })

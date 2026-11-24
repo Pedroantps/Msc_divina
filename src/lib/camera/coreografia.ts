@@ -3,6 +3,9 @@ import { P_AVANCO } from './tipos'
 
 const suave = (t: number) => t * t * (3 - 2 * t)
 
+/** smoothstep entre as bordas `de` e `ate`: 0 antes de `de`, 1 depois de `ate`. */
+const suaveEntre = (de: number, ate: number, x: number) => suave(Math.min(Math.max((x - de) / (ate - de), 0), 1))
+
 /**
  * Vista de uma área no progresso local `p` (0 a 1). O yaw é linear entre quadros (a velocidade de
  * giro nunca passa da definida pelos quadros); pitch e fov usam easing suave.
@@ -28,7 +31,7 @@ function vistaNaParada(cena: number, quadros: QuadroChave[], p: number): Vista {
 
 /**
  * Estado da câmera para o progresso global (índice da parada + progresso local; 0 a roteiros.length).
- * No avanço (p >= P_AVANCO) a vista `b` é o início da próxima parada e a mistura sobe de 0 a 1.
+ * No avanço (p >= P_AVANCO) a vista `b` é o início da próxima parada e a mistura sobe de 0 a 1 (smoothstep de 0,35 a 1 do avanço, então a foto nova só aparece na segunda metade).
  * Na última parada não há próxima: `b` é null e o FOV fica no valor de leitura.
  */
 export function estadoNaRolagem(progresso: number, roteiros: RoteiroArea[]): EstadoCamera {
@@ -46,5 +49,6 @@ export function estadoNaRolagem(progresso: number, roteiros: RoteiroArea[]): Est
   if (ehUltima || p < P_AVANCO) return { a, b: null, mistura: 0 }
 
   const b = vistaNaParada(i + 1, roteiros[i + 1].quadros, 0)
-  return { a, b, mistura: (p - P_AVANCO) / (1 - P_AVANCO) }
+  const t = (p - P_AVANCO) / (1 - P_AVANCO)
+  return { a, b, mistura: suaveEntre(0.35, 1, t) }
 }

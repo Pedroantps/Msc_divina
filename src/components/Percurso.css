@@ -31,15 +31,15 @@
 }
 
 .percurso__veu[data-posicao='esquerda'] {
-  background: linear-gradient(90deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.45) 45%, transparent 75%);
 }
 
 .percurso__veu[data-posicao='direita'] {
-  background: linear-gradient(270deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+  background: linear-gradient(270deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.45) 45%, transparent 75%);
 }
 
 .percurso__veu[data-posicao='centro'] {
-  background: linear-gradient(180deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.35) 45%, transparent 75%);
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.45) 45%, transparent 75%);
 }
 
 /* Sobe as seções por cima do palco (que ocupa 100svh no fluxo). */
@@ -104,21 +104,21 @@
   font-size: var(--t-titulo);
   font-weight: 500;
   text-wrap: balance;
-  text-shadow: 0 1px 18px rgb(0 0 0 / 0.55);
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.55);
 }
 
 .parada__meta {
   margin: 0 0 0.375rem;
   color: var(--cor-texto-claro);
   font-weight: 600;
-  text-shadow: 0 0 8px rgb(0 0 0 / 0.6);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.75), 0 0 3px rgb(0 0 0 / 0.5);
 }
 
 .parada__cta {
   display: flex;
   width: max-content;
   margin-top: 1.5rem;
-  text-shadow: 0 0 8px rgb(0 0 0 / 0.6);
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.75), 0 0 3px rgb(0 0 0 / 0.5);
 }
 
 .parada__descricao {
@@ -150,7 +150,7 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(to top, rgb(0 0 0 / 0.85) 30%, transparent);
+    background: linear-gradient(to top, rgb(0 0 0 / 0.9) 35%, transparent);
     pointer-events: none;
   }
 

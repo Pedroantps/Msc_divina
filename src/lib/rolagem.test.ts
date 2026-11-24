@@ -47,6 +47,15 @@ describe('rolagem suave', () => {
     expect(instancias[0].destroy).toHaveBeenCalled()
   })
 
+  it('o Lenis ignora a rolagem dentro de um dialog aberto', () => {
+    const limpar = iniciarRolagemSuave()
+    document.body.innerHTML = '<dialog open><p id="d"></p></dialog><p id="f"></p>'
+    const { prevent } = opcoesCriacao[0] as { prevent: (no: HTMLElement) => boolean }
+    expect(prevent(document.getElementById('d')!)).toBe(true)
+    expect(prevent(document.getElementById('f')!)).toBe(false)
+    limpar()
+  })
+
   it('rolarPara usa lenis.scrollTo com offset para bloco center', () => {
     const limpar = iniciarRolagemSuave()
     const alvo = document.getElementById('x')!

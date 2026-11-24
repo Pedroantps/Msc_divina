@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollTrigger, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useCapacidade3D } from '../hooks/useCapacidade3D'
@@ -6,8 +6,9 @@ import { estadoNaRolagem } from '../lib/camera/coreografia'
 import { panoramaPara } from '../lib/imagens'
 import { rolarParaPosicao } from '../lib/rolagem'
 import type { ControlePalco, EstadoCamera, RoteiroArea } from '../lib/camera/tipos'
-import { roteiros as roteirosPadrao } from '../data/roteiro'
+import { roteiros as roteirosPadrao, roteiroPadrao } from '../data/roteiro'
 import type { Area } from '../data/tipos'
+import { alvoDaParada, paradaAtiva } from './percursoUtil'
 import { CtaAcento } from './CtaAcento'
 import { ImagemComFallback } from './ImagemComFallback'
 import { PalcoFotos } from './PalcoFotos'
@@ -19,29 +20,26 @@ interface PercursoProps {
   areas: Area[]
   /** Âncora do capítulo (a barra de capítulos aponta para ela). */
   id?: string
-  /** Roteiros de câmera, um por área (os testes injetam os seus). */
+  /** Roteiros de câmera por área, achados por areaId; área sem roteiro usa o padrão (os testes injetam os seus). */
   roteiros?: RoteiroArea[]
 }
 
 const POSICOES = ['esquerda', 'centro', 'direita'] as const
 
-/** Faixa de progresso da parada em que o texto fica na tela. */
-const TEXTO_DE = 0.15
-const TEXTO_ATE = 0.7
-
-/** Parada cujo texto deve aparecer no progresso global, ou null entre textos. */
-function paradaAtiva(progresso: number, total: number): number | null {
-  const i = Math.min(Math.floor(progresso), total - 1)
-  const p = progresso - i
-  return p >= TEXTO_DE && p < TEXTO_ATE ? i : null
-}
-
-export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadrao }: PercursoProps) {
+export function Percurso({ areas: todasAsAreas, id = 'capitulo-navio', roteiros: sobrescritas = roteirosPadrao }: PercursoProps) {
+  // Área sem panorama não tem o que mostrar no palco 360°: fica fora das paradas e da coreografia,
+  // então progresso, roteiros e palco usam todos o mesmo N.
+  const areas = useMemo(() => todasAsAreas.filter((a) => a.panorama), [todasAsAreas])
+  const roteiros = useMemo(
+    () => areas.map((a) => sobrescritas.find((r) => r.areaId === a.id) ?? roteiroPadrao(a)),
+    [areas, sobrescritas],
+  )
   const raiz = useRef<HTMLElement>(null)
   const paradasRef = useRef<HTMLDivElement>(null)
   const palco = useRef<ControlePalco>(null)
   const ultimoEstado = useRef<EstadoCamera | null>(null)
   const ativaRef = useRef<number | null>(null)
+  const gatilho = useRef<ScrollTrigger | null>(null)
   const origemFoco = useRef<HTMLElement | null>(null)
   const reduzido = useReducedMotion()
   const capacidade = useCapacidade3D()
@@ -81,11 +79,14 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
       const alvo = paradasRef.current
       if (reduzido || !alvo) return
       const total = areas.length
-      ScrollTrigger.create({
+      gatilho.current = ScrollTrigger.create({
         trigger: alvo,
         start: 'top top',
         end: 'bottom bottom',
         scrub: true,
+        // Fora do capítulo o palco solta as texturas; ao voltar, o próximo definirEstado recarrega.
+        onLeave: () => palco.current?.liberar?.(),
+        onLeaveBack: () => palco.current?.liberar?.(),
         onUpdate: (s) => {
           const progresso = s.progress * total
           const estado = estadoNaRolagem(progresso, roteiros)
@@ -100,6 +101,7 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
       })
       return () => {
         ativaRef.current = null
+        gatilho.current = null
       }
     },
     { scope: raiz, dependencies: [reduzido, areas.length, roteiros], revertOnUpdate: true },
@@ -111,12 +113,10 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
   }
 
   // Foco por teclado numa parada inativa: rola até p≈0,4 dela (onde o texto aparece) e ativa o texto já.
-  const aoFocar = (areaId: string, indice: number) => {
-    if (reduzido || ativaRef.current === indice) return
-    const secao = document.getElementById(areaId)
-    if (!secao) return
-    const caixa = secao.getBoundingClientRect()
-    rolarParaPosicao(caixa.top + window.scrollY + 0.4 * caixa.height)
+  const aoFocar = (_areaId: string, indice: number) => {
+    const st = gatilho.current
+    if (reduzido || !st || ativaRef.current === indice) return
+    rolarParaPosicao(alvoDaParada(st.start, st.end, indice, areas.length))
     ativaRef.current = indice
     setAtiva(indice)
   }
@@ -138,7 +138,7 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
             (usaPanorama ? (
               <PalcoPanorama
                 ref={palco}
-                panoramas={areas.map((a) => panoramaPara(a.panorama!, capacidade))}
+                panoramas={areas.map((a) => panoramaPara(a.panorama ?? '', capacidade))}
                 posteres={areas.map((a) => a.imagem)}
                 dpr={dpr}
                 aoFalhar={aoFalhar}

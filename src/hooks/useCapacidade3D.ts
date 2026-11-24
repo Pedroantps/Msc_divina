@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { suportaWebGL } from '../lib/suportaWebGL'
+import { sondarWebGL } from '../lib/suportaWebGL'
 import type { Capacidade } from '../lib/camera/tipos'
 
 export interface SinaisDispositivo {
@@ -19,22 +19,12 @@ export function escolherCapacidade(s: SinaisDispositivo): Capacidade {
   return 'alta'
 }
 
-function lerMaxTextura(): number {
-  try {
-    const canvas = document.createElement('canvas')
-    const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null
-    return gl ? Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) || 0 : 0
-  } catch {
-    return 0
-  }
-}
-
 function lerSinais(): SinaisDispositivo {
   const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } }
-  const webgl = suportaWebGL()
+  const { webgl, maxTextura } = sondarWebGL()
   return {
     webgl,
-    maxTextura: webgl ? lerMaxTextura() : 0,
+    maxTextura,
     memoriaGb: nav.deviceMemory,
     economiaDados: Boolean(nav.connection?.saveData),
     toqueGrosso: typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,

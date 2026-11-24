@@ -6,14 +6,16 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { suportaWebGL } from '../lib/suportaWebGL'
 import { panoramaPara } from '../lib/imagens'
 import { estadoNaRolagem } from '../lib/camera/coreografia'
-import { roteiros } from '../data/roteiro'
+import { roteiros, roteiroPadrao } from '../data/roteiro'
 import { areasDoNavio } from '../data/areas'
 import type { Capacidade } from '../lib/camera/tipos'
 import { Percurso } from './Percurso'
+import { alvoDaParada, paradaAtiva } from './percursoUtil'
 
 const palco = vi.hoisted(() => ({
   capacidade: 'alta' as 'alta' | 'media' | 'sem3d',
   definirEstado: vi.fn(),
+  liberar: vi.fn(),
   propsPanorama: null as null | { panoramas: string[]; posteres: string[]; dpr: number; aoFalhar: () => void },
   propsFotos: null as null | { imagens: string[] },
 }))
@@ -24,7 +26,7 @@ vi.mock('./PalcoPanorama', async () => {
   return {
     PalcoPanorama: forwardRef(function PalcoPanorama(props: NonNullable<typeof palco.propsPanorama>, ref) {
       palco.propsPanorama = props
-      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado, liberar: palco.liberar }))
       return <div data-palco="panorama" />
     }),
   }
@@ -34,7 +36,7 @@ vi.mock('./PalcoFotos', async () => {
   return {
     PalcoFotos: forwardRef(function PalcoFotos(props: NonNullable<typeof palco.propsFotos>, ref) {
       palco.propsFotos = props
-      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado, liberar: palco.liberar }))
       return <div data-palco="fotos" />
     }),
   }
@@ -84,6 +86,7 @@ beforeEach(() => {
   palco.propsPanorama = null
   palco.propsFotos = null
   palco.definirEstado.mockClear()
+  palco.liberar.mockClear()
   window.IntersectionObserver = vi.fn(function (cb: IntersectionObserverCallback, opcoes?: IntersectionObserverInit) {
     const obs: Obs = { cb, opcoes, observados: [] }
     observers.push(obs)
@@ -222,6 +225,32 @@ describe('palco', () => {
     expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.5 * areasDoNavio.length, roteiros))
   })
 
+  it('área sem panorama fica fora das paradas e do palco, sem lançar erro', () => {
+    const semPanorama = { ...cabines, id: 'sem-panorama', panorama: undefined }
+    const areas = [areasDoNavio[0], semPanorama, areasDoNavio[1]]
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    const { container } = render(<Percurso areas={areas} />)
+    chegarPerto()
+    expect(paradas(container).map((s) => s.id)).toEqual([areasDoNavio[0].id, areasDoNavio[1].id])
+    expect(palco.propsPanorama!.panoramas).toHaveLength(2)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    palco.definirEstado.mockClear()
+    act(() => cfg.onUpdate!({ progress: 0.5 } as ScrollTrigger))
+    const dois = [roteiros[0], roteiros[1]]
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(1, dois))
+  })
+
+  it('área sem roteiro nas sobrescritas usa o roteiro padrão', () => {
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    render(<Percurso areas={areasDoNavio.slice(0, 2)} roteiros={[]} />)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    chegarPerto()
+    act(() => cfg.onUpdate!({ progress: 0.25 } as ScrollTrigger))
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(
+      estadoNaRolagem(0.5, [roteiroPadrao(areasDoNavio[0]), roteiroPadrao(areasDoNavio[1])]),
+    )
+  })
+
   it('aceita roteiros injetados por prop', () => {
     const outros = roteiros.map((r) => ({ ...r, quadros: r.quadros.map((q) => ({ ...q, yaw: q.yaw + 10 })) }))
     const criar = vi.spyOn(ScrollTrigger, 'create')
@@ -233,19 +262,28 @@ describe('palco', () => {
     expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.3 * areasDoNavio.length, outros))
   })
 
-  it('o texto fica ativo só na faixa p 0,15 a 0,70 da parada', () => {
+  it('o texto fica ativo só na faixa p 0,18 a 0,62 da parada', () => {
     const { cfg, container } = criarGatilho()
     const N = areasDoNavio.length
     const textos = () => Array.from(container.querySelectorAll('.parada__texto'))
     const ativos = () => textos().map((t) => t.hasAttribute('data-ativa'))
-    act(() => cfg.onUpdate!({ progress: (2 + 0.05) / N } as ScrollTrigger))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.1) / N } as ScrollTrigger))
     expect(ativos().some(Boolean)).toBe(false)
     act(() => cfg.onUpdate!({ progress: (2 + 0.4) / N } as ScrollTrigger))
     expect(ativos()).toEqual(textos().map((_, i) => i === 2))
-    act(() => cfg.onUpdate!({ progress: (2 + 0.8) / N } as ScrollTrigger))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.7) / N } as ScrollTrigger))
     expect(ativos().some(Boolean)).toBe(false)
     act(() => cfg.onUpdate!({ progress: (3 + 0.2) / N } as ScrollTrigger))
     expect(ativos()).toEqual(textos().map((_, i) => i === 3))
+  })
+
+  it('ao sair do capítulo (para baixo ou para cima) o palco libera as texturas', () => {
+    const { cfg } = criarGatilho()
+    chegarPerto()
+    act(() => cfg.onLeave!({} as ScrollTrigger))
+    expect(palco.liberar).toHaveBeenCalledTimes(1)
+    act(() => cfg.onLeaveBack!({} as ScrollTrigger))
+    expect(palco.liberar).toHaveBeenCalledTimes(2)
   })
 
   it('limpa o ScrollTrigger ao desmontar', () => {
@@ -255,17 +293,28 @@ describe('palco', () => {
     expect(ScrollTrigger.getAll()).toHaveLength(0)
   })
 
-  it('foco por teclado numa parada inativa rola até p 0,4 dela e ativa o texto na hora', () => {
+  it('alvo do foco: progresso (i + 0,4) da janela real do ScrollTrigger, dentro do texto ativo', () => {
+    const N = areasDoNavio.length
+    const inicio = 1000
+    const fim = inicio + (2 * N - 1) * 800
+    const alvo = alvoDaParada(inicio, fim, 13, N)
+    expect((alvo - inicio) / (fim - inicio)).toBeCloseTo(13.4 / N, 10)
+    expect(paradaAtiva(((alvo - inicio) / (fim - inicio)) * N, N)).toBe(13)
+  })
+
+  it('foco por teclado numa parada inativa rola até o alvo do ScrollTrigger e ativa o texto na hora', () => {
     const rolar = vi.fn()
     vi.spyOn(window, 'scrollTo').mockImplementation(rolar)
-    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(500)
+    const criar = vi.spyOn(ScrollTrigger, 'create')
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    const secao = paradas(container)[3]
-    vi.spyOn(secao, 'getBoundingClientRect').mockReturnValue({ top: 1000, height: 800 } as DOMRect)
+    const st = criar.mock.results[0].value as ScrollTrigger
+    const N = areasDoNavio.length
+    Object.assign(st, { start: 1000, end: 1000 + (2 * N - 1) * 800 })
+    const secao = paradas(container)[13]
     const botao = within(secao).getByRole('button', { name: 'Ver em 360°' })
     act(() => botao.focus())
     expect(rolar).toHaveBeenCalledTimes(1)
-    expect(rolar).toHaveBeenCalledWith({ top: 1500 + 0.4 * 800, behavior: 'auto' })
+    expect(rolar).toHaveBeenCalledWith({ top: alvoDaParada(st.start, st.end, 13, N), behavior: 'auto' })
     expect(secao.querySelector('.parada__texto')).toHaveAttribute('data-ativa', 'true')
   })
 })
