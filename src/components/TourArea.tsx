@@ -3,6 +3,7 @@ import type { Area, Cena } from '../data/tipos'
 import { CtaAcento } from './CtaAcento'
 import { ImagemComFallback } from './ImagemComFallback'
 import { Panorama360 } from './Panorama360'
+import { pausarRolagem, retomarRolagem } from '../lib/rolagem'
 import './TourArea.css'
 
 export const URL_TOUR_OFICIAL = 'https://virtual-tours.msccruises.com/MSC-Divina/en-gb/index.html'
@@ -62,7 +63,10 @@ export function TourArea({ area, aberto, aoFechar, cenaInicial, retornoFoco }: T
     const barra = window.innerWidth - document.documentElement.clientWidth
     document.body.style.overflow = 'hidden'
     if (barra > 0) document.body.style.paddingRight = `${barra}px`
+    // O Lenis captura a roda do mouse: pausa para o modal não rolar o fundo.
+    pausarRolagem()
     return () => {
+      retomarRolagem()
       document.body.style.overflow = overflow
       document.body.style.paddingRight = paddingRight
     }

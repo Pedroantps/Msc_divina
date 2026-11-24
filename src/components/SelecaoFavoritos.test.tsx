@@ -109,7 +109,7 @@ it('o foco por teclado dentro das colunas leva o elemento ao centro da tela', as
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => setTimeout(() => cb(0), 0) as unknown as number)
   render(<SelecaoFavoritos areas={todas} />)
   await userEvent.tab()
-  await waitFor(() => expect(rolar).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' }))
+  await waitFor(() => expect(rolar).toHaveBeenCalledWith({ block: 'center', behavior: 'auto' }))
 })
 
 it('com movimento reduzido o foco rola com behavior auto', async () => {

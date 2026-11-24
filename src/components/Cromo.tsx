@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CtaAcento } from './CtaAcento'
-import { useReducedMotion } from '../hooks/useReducedMotion'
+import { rolarPara } from '../lib/rolagem'
 import './Cromo.css'
 
 interface Props {
@@ -23,7 +23,6 @@ function temaSobLogo(): 'claro' | 'escuro' {
 
 /** Elementos fixos sobre a página: logo no topo esquerdo e indicador "Role para embarcar". */
 export function Cromo({ ancoraInicial = 'capitulo-navio' }: Props) {
-  const reduzido = useReducedMotion()
   const [temaFundo, setTemaFundo] = useState<'claro' | 'escuro'>('escuro')
   const [rolou, setRolou] = useState(false)
 
@@ -52,8 +51,9 @@ export function Cromo({ ancoraInicial = 'capitulo-navio' }: Props) {
   }, [])
 
   const embarcar = useCallback(() => {
-    document.getElementById(ancoraInicial)?.scrollIntoView({ behavior: reduzido ? 'auto' : 'smooth', block: 'start' })
-  }, [ancoraInicial, reduzido])
+    const alvo = document.getElementById(ancoraInicial)
+    if (alvo) rolarPara(alvo)
+  }, [ancoraInicial])
 
   // O logo é claro sobre fundo escuro e escuro sobre fundo claro.
   const corLogo = temaFundo === 'escuro' ? 'claro' : 'escuro'
