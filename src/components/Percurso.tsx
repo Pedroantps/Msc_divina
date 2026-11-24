@@ -4,6 +4,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useCapacidade3D } from '../hooks/useCapacidade3D'
 import { estadoNaRolagem } from '../lib/camera/coreografia'
 import { panoramaPara } from '../lib/imagens'
+import { rolarParaPosicao } from '../lib/rolagem'
 import type { ControlePalco, EstadoCamera, RoteiroArea } from '../lib/camera/tipos'
 import { roteiros as roteirosPadrao } from '../data/roteiro'
 import type { Area } from '../data/tipos'
@@ -115,7 +116,7 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
     const secao = document.getElementById(areaId)
     if (!secao) return
     const caixa = secao.getBoundingClientRect()
-    window.scrollTo({ top: caixa.top + window.scrollY + 0.4 * caixa.height, behavior: 'auto' })
+    rolarParaPosicao(caixa.top + window.scrollY + 0.4 * caixa.height)
     ativaRef.current = indice
     setAtiva(indice)
   }

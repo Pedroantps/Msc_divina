@@ -20,14 +20,18 @@ vi.mock('lenis', () => ({
 }))
 
 import { gsap } from './gsap'
-import { iniciarRolagemSuave, pausarRolagem, retomarRolagem, rolarPara } from './rolagem'
+import { iniciarRolagemSuave, pausarRolagem, retomarRolagem, rolarPara, rolarParaPosicao } from './rolagem'
 
 beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
   instancias.length = 0
   opcoesCriacao.length = 0
   document.body.innerHTML = '<section id="x"></section>'
 })
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('rolagem suave', () => {
   it('registra no ticker e a limpeza remove e destrói', () => {
@@ -64,6 +68,23 @@ describe('rolagem suave', () => {
       pausarRolagem()
       retomarRolagem()
     }).not.toThrow()
+  })
+
+  it('rolarParaPosicao pula direto: Lenis com immediate, sem Lenis window.scrollTo', () => {
+    const nativo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    rolarParaPosicao(1234)
+    expect(nativo).toHaveBeenCalledWith({ top: 1234, behavior: 'auto' })
+    const limpar = iniciarRolagemSuave()
+    rolarParaPosicao(567)
+    expect(instancias[0].scrollTo).toHaveBeenCalledWith(567, { immediate: true })
+    limpar()
+  })
+
+  it('sem ResizeObserver não cria o Lenis', () => {
+    vi.stubGlobal('ResizeObserver', undefined)
+    const limpar = iniciarRolagemSuave()
+    expect(instancias).toHaveLength(0)
+    limpar()
   })
 
   it('pausar e retomar chamam stop e start', () => {

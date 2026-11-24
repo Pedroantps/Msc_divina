@@ -7,6 +7,8 @@ let lenis: Lenis | null = null
 
 /** Cria o Lenis, liga ao ticker do GSAP e ao ScrollTrigger. Devolve a limpeza. */
 export function iniciarRolagemSuave(): () => void {
+  // O Lenis mede a página com ResizeObserver: sem ele (navegador antigo, jsdom) fica a rolagem nativa.
+  if (typeof ResizeObserver === 'undefined') return () => {}
   if (lenis) lenis.destroy()
   const instancia = new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false, autoRaf: false })
   lenis = instancia
@@ -48,6 +50,12 @@ export function rolarPara(alvo: HTMLElement | string, opcoes: OpcoesRolagem = {}
   }
   const offset = bloco === 'center' ? -(window.innerHeight - el.getBoundingClientRect().height) / 2 : 0
   lenis.scrollTo(el, { offset, immediate: imediato })
+}
+
+/** Rola até uma posição absoluta do documento, sem animação (pula direto, inclusive com o Lenis ativo). */
+export function rolarParaPosicao(top: number): void {
+  if (lenis) lenis.scrollTo(top, { immediate: true })
+  else window.scrollTo({ top, behavior: 'auto' })
 }
 
 export function pausarRolagem(): void {
