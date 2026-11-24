@@ -44,7 +44,7 @@ function criarCamada(geometria: SphereGeometry): Camada {
 const frente = new Vector3()
 
 /** Aponta a câmera da camada para a vista e prepara os uniforms. */
-function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: number): void {
+function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: number, desfocar: boolean): void {
   c.camera.rotation.y = -MathUtils.degToRad(vista.yaw)
   c.camera.rotation.x = MathUtils.degToRad(vista.pitch)
   if (c.camera.fov !== vista.fov) {
@@ -56,7 +56,7 @@ function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: nu
   const u = c.material.uniforms
   u.uTextura.value = textura
   u.uOpacidade.value = opacidade
-  u.uAvanco.value = avancoDoFov(vista.fov)
+  u.uAvanco.value = desfocar ? avancoDoFov(vista.fov) : 0
   ;(u.uFrente.value as Vector3).copy(frente)
 }
 
@@ -161,11 +161,12 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     const texB = b ? pronta(b.cena) : undefined
     renderer.clear()
     if (texA && mistura < 1) {
-      prepararCamada(camadaA, a, texA, 1)
+      prepararCamada(camadaA, a, texA, 1, true)
       renderer.render(camadaA.cena, camadaA.camera)
     }
     if (b && texB && mistura > 0) {
-      prepararCamada(camadaB, b, texB, mistura)
+      // A cena que chega fica nítida: o desfoque é só da que sai.
+      prepararCamada(camadaB, b, texB, mistura, false)
       renderer.render(camadaB.cena, camadaB.camera)
     }
     // Visível se alguma camada desenhou algo: `a`, ou `b` durante o avanço.

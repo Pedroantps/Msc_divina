@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry, Texture } from 'three'
 import { criarMotor } from './motor'
-import { descartarTextura } from './shader'
+import { criarMaterialPanorama, descartarTextura } from './shader'
 import type { Motor, OpcoesMotor } from './motor'
 import type { EstadoCamera, Vista } from './tipos'
 
@@ -338,6 +338,33 @@ describe('criarMotor', () => {
       rodarOcioso()
       rodarQuadros()
       expect(aoPronto).not.toHaveBeenCalledWith(true)
+    })
+  })
+
+  describe('desfoque do avanço', () => {
+    it('só a camada a desfoca; b fica sempre nítida', async () => {
+      const { motor, renderer, pedido } = montar()
+      const avancos: number[] = []
+      renderer.render.mockImplementation((cena: Scene) => {
+        avancos.push(((cena.children[0] as Mesh).material as ShaderMaterial).uniforms.uAvanco.value as number)
+      })
+      motor.definirEstado({ a: vista(0, 60), b: vista(1, 60), mistura: 0.5 })
+      pedido(0).resolver(new Texture())
+      pedido(1).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarOcioso()
+      rodarQuadros()
+      expect(avancos).toHaveLength(2)
+      expect(avancos[0]).toBeGreaterThan(0.8)
+      expect(avancos[1]).toBe(0)
+    })
+
+    it('o shader usa 20 amostras com deslocamento por pixel e força quadrática', () => {
+      const { fragmentShader } = criarMaterialPanorama()
+      expect(fragmentShader).toMatch(/AMOSTRAS\s*=\s*20;/)
+      expect(fragmentShader).toContain('gl_FragCoord')
+      expect(fragmentShader).toMatch(/0\.08\s*\*\s*uAvanco\s*\*\s*uAvanco/)
     })
   })
 })
