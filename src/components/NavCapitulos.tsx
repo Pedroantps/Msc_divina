@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useProgressoCapitulo } from '../hooks/useProgressoCapitulo'
-import { useReducedMotion } from '../hooks/useReducedMotion'
 import type { Area, Capitulo } from '../data/tipos'
+import { rolarPara } from '../lib/rolagem'
 import './NavCapitulos.css'
 
 interface Props {
@@ -43,7 +43,6 @@ function capituloAtual(capitulos: Capitulo[]): string | undefined {
 
 /** Barra fixa de capítulos no canto inferior direito, com linha de progresso e índice em diálogo. */
 export function NavCapitulos({ capitulos, areas }: Props) {
-  const reduzido = useReducedMotion()
   const [atual, setAtual] = useState<string | undefined>(capitulos[0]?.id)
   const botaoIndice = useRef<HTMLButtonElement>(null)
   const dialogo = useRef<HTMLDialogElement>(null)
@@ -70,7 +69,8 @@ export function NavCapitulos({ capitulos, areas }: Props) {
   }, [capitulos])
 
   const irPara = (ancora: string) => {
-    document.getElementById(ancora)?.scrollIntoView({ behavior: reduzido ? 'auto' : 'smooth', block: 'start' })
+    const alvo = document.getElementById(ancora)
+    if (alvo) rolarPara(alvo)
   }
 
   const abrir = () => {
