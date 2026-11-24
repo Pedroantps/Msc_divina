@@ -10,6 +10,7 @@ import { roteiros } from '../data/roteiro'
 import { areasDoNavio } from '../data/areas'
 import type { Capacidade } from '../lib/camera/tipos'
 import { Percurso } from './Percurso'
+import { alvoDaParada, paradaAtiva } from './percursoUtil'
 
 const palco = vi.hoisted(() => ({
   capacidade: 'alta' as 'alta' | 'media' | 'sem3d',
@@ -255,17 +256,28 @@ describe('palco', () => {
     expect(ScrollTrigger.getAll()).toHaveLength(0)
   })
 
-  it('foco por teclado numa parada inativa rola até p 0,4 dela e ativa o texto na hora', () => {
+  it('alvo do foco: progresso (i + 0,4) da janela real do ScrollTrigger, dentro do texto ativo', () => {
+    const N = areasDoNavio.length
+    const inicio = 1000
+    const fim = inicio + (2 * N - 1) * 800
+    const alvo = alvoDaParada(inicio, fim, 13, N)
+    expect((alvo - inicio) / (fim - inicio)).toBeCloseTo(13.4 / N, 10)
+    expect(paradaAtiva(((alvo - inicio) / (fim - inicio)) * N, N)).toBe(13)
+  })
+
+  it('foco por teclado numa parada inativa rola até o alvo do ScrollTrigger e ativa o texto na hora', () => {
     const rolar = vi.fn()
     vi.spyOn(window, 'scrollTo').mockImplementation(rolar)
-    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(500)
+    const criar = vi.spyOn(ScrollTrigger, 'create')
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    const secao = paradas(container)[3]
-    vi.spyOn(secao, 'getBoundingClientRect').mockReturnValue({ top: 1000, height: 800 } as DOMRect)
+    const st = criar.mock.results[0].value as ScrollTrigger
+    const N = areasDoNavio.length
+    Object.assign(st, { start: 1000, end: 1000 + (2 * N - 1) * 800 })
+    const secao = paradas(container)[13]
     const botao = within(secao).getByRole('button', { name: 'Ver em 360°' })
     act(() => botao.focus())
     expect(rolar).toHaveBeenCalledTimes(1)
-    expect(rolar).toHaveBeenCalledWith({ top: 1500 + 0.4 * 800, behavior: 'auto' })
+    expect(rolar).toHaveBeenCalledWith({ top: alvoDaParada(st.start, st.end, 13, N), behavior: 'auto' })
     expect(secao.querySelector('.parada__texto')).toHaveAttribute('data-ativa', 'true')
   })
 })
