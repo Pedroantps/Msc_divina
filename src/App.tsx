@@ -28,7 +28,7 @@ export default function App() {
       <Cromo ancoraInicial="capitulo-navio" />
       <NavCapitulos capitulos={capitulos} areas={areasDoNavio} />
       <main id="conteudo" tabIndex={-1}>
-        <Hero imagem={capas.navio.imagem} alt={capas.navio.alt} alvo={{ x: 62, y: 48 }} />
+        <Hero imagem={capas.navio.imagem} alt={capas.navio.alt} alvo={{ x: 14, y: 69.7 }} proporcao={3 / 2} />
         <Percurso areas={areasDoNavio} id="capitulo-navio" />
         <Buzios lugares={lugaresBuzios} capa={capas.buzios} id="capitulo-buzios" />
         <SelecaoFavoritos areas={todas} />

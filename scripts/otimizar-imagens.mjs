@@ -14,6 +14,9 @@ const ENTRADA = process.env.FOTOS_ORIGINAIS ? path.resolve(process.env.FOTOS_ORI
 const SAIDA = path.join(RAIZ, 'public')
 
 // entrada: subpasta de fotos-originais; saida: subpasta de public; qualidade fixa quando definida (sem teto de tamanho).
+// Capa do herói: o zoom aproxima muito, então ela sai maior que as outras fotos.
+const CAPA_HEROI = 'divina-externa'
+
 const TIPOS = {
   img: { entrada: 'img', saida: 'img', limite: 200 * 1024, redimensionar: (s) => s.resize({ width: 1920, withoutEnlargement: true }) },
   // 'fill': o panorama equirretangular precisa ser exatamente 2:1 e inteiro.
@@ -59,9 +62,13 @@ async function otimizar(arquivo, tipo, config, gravados) {
   if (config.qualidade) {
     melhor = await config.redimensionar(sharp(original).rotate()).webp({ quality: qualidade }).toBuffer()
   } else {
+    const heroi = tipo === 'img' && kebab === CAPA_HEROI
+    const limite = heroi ? 700 * 1024 : config.limite
     for (; qualidade >= 50; qualidade -= 5) {
-      melhor = await config.redimensionar(sharp(original).rotate()).webp({ quality: qualidade }).toBuffer()
-      if (melhor.length <= config.limite) break
+      const base = sharp(original).rotate()
+      const img = heroi ? base.resize({ width: 3840, withoutEnlargement: true }) : config.redimensionar(base)
+      melhor = await img.webp({ quality: qualidade }).toBuffer()
+      if (melhor.length <= limite) break
     }
     if (qualidade < 50) qualidade = 50
   }
@@ -70,8 +77,9 @@ async function otimizar(arquivo, tipo, config, gravados) {
 
   const kb = (melhor.length / 1024).toFixed(0)
   console.log(`${config.saida.replaceAll(path.sep, '/')}/${nome}  ${kb} KB  qualidade ${qualidade}${existia ? '  (sobrescreveu)' : ''}`)
-  if (config.limite && melhor.length > config.limite) {
-    console.warn(`AVISO: ${tipo}/${nome} ficou com ${kb} KB, acima do limite de ${(config.limite / 1024).toFixed(0)} KB`)
+  const limiteFinal = tipo === 'img' && kebab === CAPA_HEROI ? 700 * 1024 : config.limite
+  if (limiteFinal && melhor.length > limiteFinal) {
+    console.warn(`AVISO: ${tipo}/${nome} ficou com ${kb} KB, acima do limite de ${(limiteFinal / 1024).toFixed(0)} KB`)
     return 'acima'
   }
   return 'ok'

@@ -7,6 +7,9 @@
 .hero:not([data-estatico='true']) {
   position: relative;
   z-index: 1;
+  /* O palco some no fim e revela o capítulo do navio por baixo (ele sobe 100svh por cima do fim do herói). */
+  background: transparent;
+  pointer-events: none;
 }
 
 .hero[data-estatico='true'] {

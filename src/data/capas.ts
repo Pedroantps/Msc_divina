@@ -3,7 +3,7 @@ export const capas = {
   navio: {
     imagem: '/img/divina-externa.webp',
     alt: 'O navio MSC Divina visto de fora',
-    credito: 'Foto: Karl Borg (Albireo2006), Wikimedia Commons (CC BY-SA 2.0)',
+    credito: 'Foto: René Cortin, Wikimedia Commons (CC BY-SA 4.0)',
   },
   buzios: {
     imagem: '/img/buzios-panorama-geral.webp',

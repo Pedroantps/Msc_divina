@@ -6,6 +6,11 @@
   position: relative;
 }
 
+/* Sobe 100svh por baixo do herói: quando o palco do herói some, a Recepção já está no lugar. */
+.percurso:not([data-estatico='true']) {
+  margin-top: -100svh;
+}
+
 .percurso__palco {
   position: sticky;
   top: 0;
