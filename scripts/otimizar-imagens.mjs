@@ -1,4 +1,7 @@
-// Uso: npm run imagens
+// Uso: npm run imagens            (tudo)
+//      npm run imagens -- pano    (só os panoramas, nos dois tamanhos)
+//      npm run imagens -- img     (só as fotos e as variantes de 640px)
+// A pasta de entrada pode ser trocada pela variável de ambiente FOTOS_ORIGINAIS.
 // Também gera public/img/640/<nome>.webp (640px de largura, até 70 KB) a partir de public/img/*.webp.
 // Lê fotos-originais/{img,pano}/*.{jpg,jpeg,png,heic} e grava public/{img,pano}/<nome-kebab>.webp
 import { existsSync } from 'node:fs'
@@ -7,15 +10,21 @@ import path from 'node:path'
 import sharp from 'sharp'
 
 const RAIZ = path.resolve(import.meta.dirname, '..')
-const ENTRADA = path.join(RAIZ, 'fotos-originais')
+const ENTRADA = process.env.FOTOS_ORIGINAIS ? path.resolve(process.env.FOTOS_ORIGINAIS) : path.join(RAIZ, 'fotos-originais')
 const SAIDA = path.join(RAIZ, 'public')
 
+// entrada: subpasta de fotos-originais; saida: subpasta de public; qualidade fixa quando definida (sem teto de tamanho).
 const TIPOS = {
-  img: { limite: 200 * 1024, redimensionar: (s) => s.resize({ width: 1920, withoutEnlargement: true }) },
+  img: { entrada: 'img', saida: 'img', limite: 200 * 1024, redimensionar: (s) => s.resize({ width: 1920, withoutEnlargement: true }) },
   // 'fill': o panorama equirretangular precisa ser exatamente 2:1 e inteiro.
   // 'cover' cortaria parte dos 360 graus; 'fill' só distorce se a origem não for 2:1.
-  pano: { limite: 1.5 * 1024 * 1024, redimensionar: (s) => s.resize(4096, 2048, { fit: 'fill' }) },
+  pano: { entrada: 'pano', saida: 'pano', qualidade: 88, redimensionar: (s) => s.resize(4096, 2048, { fit: 'fill' }) },
+  pano2048: { entrada: 'pano', saida: path.join('pano', '2048'), qualidade: 85, redimensionar: (s) => s.resize(2048, 1024, { fit: 'fill' }) },
 }
+
+// Filtro por argumento: 'pano' cobre pano e pano2048.
+const ARGS = process.argv.slice(2)
+const quer = (tipo) => ARGS.length === 0 || ARGS.includes(tipo) || (tipo === 'pano2048' && ARGS.includes('pano'))
 
 const EXTENSOES = /\.(jpe?g|png|heic)$/i
 
@@ -37,27 +46,31 @@ async function otimizar(arquivo, tipo, config, gravados) {
     return 'ignorado'
   }
   const nome = `${kebab}.webp`
-  const destino = path.join(SAIDA, tipo, nome)
+  const destino = path.join(SAIDA, config.saida, nome)
   if (gravados.has(destino)) {
     console.warn(`AVISO: ${tipo}/${arquivo} ignorado: gera ${nome}, que já veio de ${tipo}/${gravados.get(destino)}`)
     return 'ignorado'
   }
   gravados.set(destino, arquivo)
-  const original = path.join(ENTRADA, tipo, arquivo)
+  const original = path.join(ENTRADA, config.entrada, arquivo)
 
   let melhor
-  let qualidade = 80
-  for (; qualidade >= 50; qualidade -= 5) {
+  let qualidade = config.qualidade ?? 80
+  if (config.qualidade) {
     melhor = await config.redimensionar(sharp(original).rotate()).webp({ quality: qualidade }).toBuffer()
-    if (melhor.length <= config.limite) break
+  } else {
+    for (; qualidade >= 50; qualidade -= 5) {
+      melhor = await config.redimensionar(sharp(original).rotate()).webp({ quality: qualidade }).toBuffer()
+      if (melhor.length <= config.limite) break
+    }
+    if (qualidade < 50) qualidade = 50
   }
-  if (qualidade < 50) qualidade = 50
   const existia = existsSync(destino)
   await writeFile(destino, melhor)
 
   const kb = (melhor.length / 1024).toFixed(0)
-  console.log(`${tipo}/${nome}  ${kb} KB  qualidade ${qualidade}${existia ? '  (sobrescreveu)' : ''}`)
-  if (melhor.length > config.limite) {
+  console.log(`${config.saida.replaceAll(path.sep, '/')}/${nome}  ${kb} KB  qualidade ${qualidade}${existia ? '  (sobrescreveu)' : ''}`)
+  if (config.limite && melhor.length > config.limite) {
     console.warn(`AVISO: ${tipo}/${nome} ficou com ${kb} KB, acima do limite de ${(config.limite / 1024).toFixed(0)} KB`)
     return 'acima'
   }
@@ -90,7 +103,7 @@ async function gerarVariantes640() {
 }
 
 async function main() {
-  await gerarVariantes640()
+  if (quer('img')) await gerarVariantes640()
   if (!existsSync(ENTRADA)) {
     console.log('Pasta fotos-originais/ não existe. Crie fotos-originais/img e fotos-originais/pano e coloque as fotos lá.')
     return
@@ -101,9 +114,10 @@ async function main() {
   const gravados = new Map()
   let erros = 0
   for (const [tipo, config] of Object.entries(TIPOS)) {
-    const pasta = path.join(ENTRADA, tipo)
+    if (!quer(tipo)) continue
+    const pasta = path.join(ENTRADA, config.entrada)
     if (!existsSync(pasta)) continue
-    await mkdir(path.join(SAIDA, tipo), { recursive: true })
+    await mkdir(path.join(SAIDA, config.saida), { recursive: true })
     for (const arquivo of (await readdir(pasta)).filter((f) => EXTENSOES.test(f)).sort()) {
       try {
         total++
