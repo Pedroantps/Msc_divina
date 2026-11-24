@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { roteiros } from '../../data/roteiro'
-import { ALTURA_PARADA, FOV_MIN, GIRO_MAX_POR_TELA, P_AVANCO } from './tipos'
+import { FOV_MIN, GIRO_MAX_POR_TELA, P_AVANCO } from './tipos'
 import { estadoNaRolagem } from './coreografia'
 
 const r = roteiros
 const N = r.length
+/** Telas roladas por unidade de progresso: o ScrollTrigger mede (2N-1) telas para N paradas. */
+const TELAS_POR_PROGRESSO = (2 * N - 1) / N
 const q = (i: number, p: number) => r[i].quadros.find((x) => x.p === p)!
 
 describe('estadoNaRolagem', () => {
@@ -15,10 +17,10 @@ describe('estadoNaRolagem', () => {
     expect(e.mistura).toBe(0)
   })
 
-  it('interpola entre os quadros 0,15 e 0,7', () => {
-    const e = estadoNaRolagem(2 + (0.15 + 0.7) / 2, r)
+  it('interpola entre os quadros 0,15 e 0,62', () => {
+    const e = estadoNaRolagem(2 + (0.15 + 0.62) / 2, r)
     const a = q(2, 0.15)
-    const b = q(2, 0.7)
+    const b = q(2, 0.62)
     expect(e.a.cena).toBe(2)
     expect(e.a.yaw).toBeCloseTo((a.yaw + b.yaw) / 2, 5)
     expect(e.a.fov).toBeGreaterThan(b.fov)
@@ -29,7 +31,11 @@ describe('estadoNaRolagem', () => {
     const ini = estadoNaRolagem(2 + P_AVANCO, r)
     expect(ini.mistura).toBeCloseTo(0, 5)
     expect(ini.b).toEqual({ cena: 3, yaw: q(3, 0).yaw, pitch: q(3, 0).pitch, fov: q(3, 0).fov })
-    const meio = estadoNaRolagem(2 + (P_AVANCO + 1) / 2, r)
+    // mistura = smoothstep(0,35, 1, t), com t o avanço de 0 a 1: só começa a aparecer após 35% dele.
+    const cedo = estadoNaRolagem(2 + P_AVANCO + 0.35 * (1 - P_AVANCO), r)
+    expect(cedo.mistura).toBeCloseTo(0, 5)
+    const t = 0.675
+    const meio = estadoNaRolagem(2 + P_AVANCO + t * (1 - P_AVANCO), r)
     expect(meio.mistura).toBeCloseTo(0.5, 5)
     const fim = estadoNaRolagem(3 - 1e-9, r)
     expect(fim.mistura).toBeCloseTo(1, 3)
@@ -65,7 +71,7 @@ describe('estadoNaRolagem', () => {
       for (let k = 1; k < area.quadros.length; k++) {
         const a = area.quadros[k - 1]
         const b = area.quadros[k]
-        const telas = (b.p - a.p) * ALTURA_PARADA
+        const telas = (b.p - a.p) * TELAS_POR_PROGRESSO
         expect(Math.abs(b.yaw - a.yaw) / telas, `${area.areaId} ${a.p}-${b.p}`).toBeLessThanOrEqual(GIRO_MAX_POR_TELA)
       }
     }
@@ -76,11 +82,11 @@ describe('estadoNaRolagem', () => {
     for (let g = 0; g < N - passo; g += passo) {
       if (Math.floor(g) !== Math.floor(g + passo)) continue
       const d = Math.abs(estadoNaRolagem(g + passo, r).a.yaw - estadoNaRolagem(g, r).a.yaw)
-      expect(d / (passo * ALTURA_PARADA)).toBeLessThanOrEqual(GIRO_MAX_POR_TELA + 1e-6)
+      expect(d / (passo * TELAS_POR_PROGRESSO)).toBeLessThanOrEqual(GIRO_MAX_POR_TELA + 1e-6)
     }
   })
 
-  it('fov nunca fica abaixo de 55 e só fica abaixo de 85 no avanço (p > 0,85)', () => {
+  it('fov nunca fica abaixo de 55 e só fica abaixo de 85 no avanço (p > P_AVANCO)', () => {
     for (let g = 0; g <= N; g += 0.005) {
       const e = estadoNaRolagem(g, r)
       expect(e.a.fov).toBeGreaterThanOrEqual(FOV_MIN)

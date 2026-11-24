@@ -1,6 +1,6 @@
 /** Faixa de progresso da parada em que o texto fica na tela. */
-const TEXTO_DE = 0.15
-const TEXTO_ATE = 0.7
+const TEXTO_DE = 0.18
+const TEXTO_ATE = 0.62
 
 /** Parada cujo texto deve aparecer no progresso global, ou null entre textos. */
 export function paradaAtiva(progresso: number, total: number): number | null {

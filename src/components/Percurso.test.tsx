@@ -236,16 +236,16 @@ describe('palco', () => {
     expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.3 * areasDoNavio.length, outros))
   })
 
-  it('o texto fica ativo só na faixa p 0,15 a 0,70 da parada', () => {
+  it('o texto fica ativo só na faixa p 0,18 a 0,62 da parada', () => {
     const { cfg, container } = criarGatilho()
     const N = areasDoNavio.length
     const textos = () => Array.from(container.querySelectorAll('.parada__texto'))
     const ativos = () => textos().map((t) => t.hasAttribute('data-ativa'))
-    act(() => cfg.onUpdate!({ progress: (2 + 0.05) / N } as ScrollTrigger))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.1) / N } as ScrollTrigger))
     expect(ativos().some(Boolean)).toBe(false)
     act(() => cfg.onUpdate!({ progress: (2 + 0.4) / N } as ScrollTrigger))
     expect(ativos()).toEqual(textos().map((_, i) => i === 2))
-    act(() => cfg.onUpdate!({ progress: (2 + 0.8) / N } as ScrollTrigger))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.7) / N } as ScrollTrigger))
     expect(ativos().some(Boolean)).toBe(false)
     act(() => cfg.onUpdate!({ progress: (3 + 0.2) / N } as ScrollTrigger))
     expect(ativos()).toEqual(textos().map((_, i) => i === 3))

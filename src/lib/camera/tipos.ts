@@ -43,7 +43,7 @@ export interface ControlePalco {
 /** Altura de cada parada, em telas (200svh). */
 export const ALTURA_PARADA = 2
 /** Início do avanço para a próxima área, em progresso da parada. */
-export const P_AVANCO = 0.85
+export const P_AVANCO = 0.78
 /** Menor campo de visão permitido (só durante o avanço). */
 export const FOV_MIN = 55
 /** Menor campo de visão nas fases de leitura. */
