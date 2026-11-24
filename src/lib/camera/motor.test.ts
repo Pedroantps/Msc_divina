@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PerspectiveCamera, ShaderMaterial, SphereGeometry, Texture } from 'three'
+import { Mesh, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry, Texture } from 'three'
 import { criarMotor } from './motor'
 import type { Motor, OpcoesMotor } from './motor'
 import type { EstadoCamera, Vista } from './tipos'
@@ -36,6 +36,19 @@ function rodarQuadros() {
   const fila = [...quadros.values()]
   quadros.clear()
   for (const fn of fila) fn(0)
+}
+
+/** Fila manual de requestIdleCallback. */
+let ociosos: Map<number, IdleRequestCallback>
+let proximoOcioso: number
+function rodarOcioso() {
+  const fila = [...ociosos.values()]
+  ociosos.clear()
+  for (const fn of fila) fn({ didTimeout: false, timeRemaining: () => 50 })
+}
+
+const microtarefas = async () => {
+  for (let i = 0; i < 5; i++) await Promise.resolve()
 }
 
 interface Pedido {
@@ -78,6 +91,16 @@ beforeEach(() => {
   })
   vi.stubGlobal('cancelAnimationFrame', (id: number) => {
     quadros.delete(id)
+  })
+  ociosos = new Map()
+  proximoOcioso = 1
+  vi.stubGlobal('requestIdleCallback', (fn: IdleRequestCallback) => {
+    const id = proximoOcioso++
+    ociosos.set(id, fn)
+    return id
+  })
+  vi.stubGlobal('cancelIdleCallback', (id: number) => {
+    ociosos.delete(id)
   })
 })
 
@@ -129,5 +152,71 @@ describe('criarMotor', () => {
     const { motor, pedidosDe } = montar()
     motor.definirEstado(estado(3))
     expect(pedidosDe()[0]).toBe(3)
+  })
+
+  describe('upload das texturas', () => {
+    it('envia a textura à GPU no tempo ocioso, antes de qualquer render que a use', async () => {
+      const { motor, renderer, pedido } = montar()
+      const vistas: unknown[] = []
+      renderer.render.mockImplementation((cena: Scene) => {
+        vistas.push(((cena.children[0] as Mesh).material as ShaderMaterial).uniforms.uTextura.value)
+      })
+      motor.definirEstado(estado(0))
+      const tex = new Texture()
+      pedido(0).resolver(tex)
+      await microtarefas()
+      rodarQuadros()
+      expect(vistas).not.toContain(tex)
+      expect(renderer.initTexture).not.toHaveBeenCalled()
+
+      rodarOcioso()
+      expect(renderer.initTexture).toHaveBeenCalledWith(tex)
+      rodarQuadros()
+      expect(vistas).toContain(tex)
+      const primeiroRender = renderer.render.mock.invocationCallOrder[vistas.indexOf(tex)]
+      expect(renderer.initTexture.mock.invocationCallOrder[0]).toBeLessThan(primeiroRender)
+    })
+
+    it('envia uma textura por vez, a da cena atual primeiro', async () => {
+      const { motor, renderer, pedido } = montar()
+      motor.definirEstado(estado(5))
+      const t4 = new Texture()
+      const t5 = new Texture()
+      pedido(4).resolver(t4)
+      pedido(5).resolver(t5)
+      await microtarefas()
+      rodarOcioso()
+      expect(renderer.initTexture.mock.calls.map(([t]) => t)).toEqual([t5])
+      rodarOcioso()
+      expect(renderer.initTexture.mock.calls.map(([t]) => t)).toEqual([t5, t4])
+    })
+
+    it('sem requestIdleCallback, usa setTimeout', async () => {
+      vi.stubGlobal('requestIdleCallback', undefined)
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const { motor, renderer, pedido } = montar()
+        motor.definirEstado(estado(0))
+        const tex = new Texture()
+        pedido(0).resolver(tex)
+        await microtarefas()
+        expect(renderer.initTexture).not.toHaveBeenCalled()
+        vi.advanceTimersByTime(0)
+        expect(renderer.initTexture).toHaveBeenCalledWith(tex)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('textura descartada antes do upload não sobe', async () => {
+      const { motor, renderer, pedido } = montar()
+      motor.definirEstado(estado(0))
+      const t1 = new Texture()
+      pedido(1).resolver(t1)
+      await microtarefas()
+      motor.destruir()
+      rodarOcioso()
+      expect(renderer.initTexture).not.toHaveBeenCalledWith(t1)
+    })
   })
 })

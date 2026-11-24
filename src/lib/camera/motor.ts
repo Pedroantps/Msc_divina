@@ -56,6 +56,16 @@ function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: nu
   ;(u.uFrente.value as Vector3).copy(frente)
 }
 
+/** Roda `fn` quando a thread principal estiver ociosa (ou no próximo ciclo). Devolve o cancelamento. */
+function quandoOcioso(fn: () => void): () => void {
+  if (typeof requestIdleCallback === 'function') {
+    const id = requestIdleCallback(() => fn())
+    return () => cancelIdleCallback(id)
+  }
+  const id = setTimeout(fn, 0)
+  return () => clearTimeout(id)
+}
+
 function iguais(x: Vista | null, y: Vista | null): boolean {
   if (x === null || y === null) return x === y
   return x.cena === y.cena && x.yaw === y.yaw && x.pitch === y.pitch && x.fov === y.fov
@@ -81,11 +91,27 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
   const camadaA = criarCamada(geometria)
   const camadaB = criarCamada(geometria)
 
+  // Upload à GPU fora da transição: a textura que chega espera o tempo ocioso para subir
+  // (initTexture), uma por vez, e só entra no desenho depois disso.
+  const enviadas = new Set<Texture>()
+  const pendentes = new Map<Texture, number>()
+  let cancelarEnvio: (() => void) | null = null
+
   const gerente = new GerenteTexturas<Texture>(
     urls,
     opcoes.carregador ?? criarCarregadorTextura(renderer.capabilities.getMaxAnisotropy()),
-    descartarTextura,
+    (textura) => {
+      pendentes.delete(textura)
+      enviadas.delete(textura)
+      descartarTextura(textura)
+    },
   )
+
+  /** A textura da cena, só se já estiver na GPU. */
+  function pronta(cena: number): Texture | undefined {
+    const textura = gerente.obter(cena)
+    return textura && enviadas.has(textura) ? textura : undefined
+  }
 
   let estado: EstadoCamera | null = null
   let quadro = 0
@@ -96,8 +122,8 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     quadro = 0
     if (!estado || perdido) return
     const { a, b, mistura } = estado
-    const texA = gerente.obter(a.cena)
-    const texB = b ? gerente.obter(b.cena) : undefined
+    const texA = pronta(a.cena)
+    const texB = b ? pronta(b.cena) : undefined
     renderer.clear()
     if (texA && mistura < 1) {
       prepararCamada(camadaA, a, texA, 1)
@@ -118,7 +144,39 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     if (quadro === 0) quadro = requestAnimationFrame(desenhar)
   }
 
-  const pararAviso = gerente.aoMudar(agendar)
+  function enviarProxima() {
+    cancelarEnvio = null
+    if (perdido || pendentes.size === 0) return
+    // A cena atual primeiro, depois a próxima; o resto na ordem de chegada.
+    const prioridade = [estado?.a.cena, estado?.b?.cena]
+    let escolhida = pendentes.keys().next().value!
+    for (const [textura, cena] of pendentes) {
+      if (prioridade.includes(cena)) {
+        escolhida = textura
+        if (cena === prioridade[0]) break
+      }
+    }
+    pendentes.delete(escolhida)
+    renderer.initTexture(escolhida)
+    enviadas.add(escolhida)
+    agendar()
+    agendarEnvio()
+  }
+
+  function agendarEnvio() {
+    if (cancelarEnvio === null && pendentes.size > 0) cancelarEnvio = quandoOcioso(enviarProxima)
+  }
+
+  /** Uma textura chegou (ou falhou): põe as novas na fila de upload. */
+  function aoMudarTexturas() {
+    for (let i = 0; i < urls.length; i++) {
+      const textura = gerente.obter(i)
+      if (textura && !enviadas.has(textura) && !pendentes.has(textura)) pendentes.set(textura, i)
+    }
+    agendarEnvio()
+  }
+
+  const pararAviso = gerente.aoMudar(aoMudarTexturas)
 
   function aoPerder(e: Event) {
     e.preventDefault()
@@ -148,6 +206,8 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     destruir() {
       if (quadro) cancelAnimationFrame(quadro)
       quadro = 0
+      cancelarEnvio?.()
+      cancelarEnvio = null
       canvas.removeEventListener('webglcontextlost', aoPerder)
       pararAviso()
       gerente.destruir()
