@@ -36,6 +36,8 @@ export type Capacidade = 'alta' | 'media' | 'sem3d'
 /** Interface imperativa dos palcos (WebGL ou fotos): recebe o estado a cada atualização da rolagem. */
 export interface ControlePalco {
   definirEstado(e: EstadoCamera): void
+  /** Solta os recursos pesados (texturas) quando o capítulo sai da tela; o próximo definirEstado recarrega. */
+  liberar?(): void
 }
 
 /** Altura de cada parada, em telas (200svh). */
