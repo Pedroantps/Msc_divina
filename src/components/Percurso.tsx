@@ -77,6 +77,9 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
         start: 'top top',
         end: 'bottom bottom',
         scrub: true,
+        // Fora do capítulo o palco solta as texturas; ao voltar, o próximo definirEstado recarrega.
+        onLeave: () => palco.current?.liberar?.(),
+        onLeaveBack: () => palco.current?.liberar?.(),
         onUpdate: (s) => {
           const progresso = s.progress * total
           const estado = estadoNaRolagem(progresso, roteiros)

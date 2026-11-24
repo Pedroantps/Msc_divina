@@ -15,6 +15,7 @@ import { alvoDaParada, paradaAtiva } from './percursoUtil'
 const palco = vi.hoisted(() => ({
   capacidade: 'alta' as 'alta' | 'media' | 'sem3d',
   definirEstado: vi.fn(),
+  liberar: vi.fn(),
   propsPanorama: null as null | { panoramas: string[]; posteres: string[]; dpr: number; aoFalhar: () => void },
   propsFotos: null as null | { imagens: string[] },
 }))
@@ -25,7 +26,7 @@ vi.mock('./PalcoPanorama', async () => {
   return {
     PalcoPanorama: forwardRef(function PalcoPanorama(props: NonNullable<typeof palco.propsPanorama>, ref) {
       palco.propsPanorama = props
-      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado, liberar: palco.liberar }))
       return <div data-palco="panorama" />
     }),
   }
@@ -35,7 +36,7 @@ vi.mock('./PalcoFotos', async () => {
   return {
     PalcoFotos: forwardRef(function PalcoFotos(props: NonNullable<typeof palco.propsFotos>, ref) {
       palco.propsFotos = props
-      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado, liberar: palco.liberar }))
       return <div data-palco="fotos" />
     }),
   }
@@ -85,6 +86,7 @@ beforeEach(() => {
   palco.propsPanorama = null
   palco.propsFotos = null
   palco.definirEstado.mockClear()
+  palco.liberar.mockClear()
   window.IntersectionObserver = vi.fn(function (cb: IntersectionObserverCallback, opcoes?: IntersectionObserverInit) {
     const obs: Obs = { cb, opcoes, observados: [] }
     observers.push(obs)
@@ -247,6 +249,15 @@ describe('palco', () => {
     expect(ativos().some(Boolean)).toBe(false)
     act(() => cfg.onUpdate!({ progress: (3 + 0.2) / N } as ScrollTrigger))
     expect(ativos()).toEqual(textos().map((_, i) => i === 3))
+  })
+
+  it('ao sair do capítulo (para baixo ou para cima) o palco libera as texturas', () => {
+    const { cfg } = criarGatilho()
+    chegarPerto()
+    act(() => cfg.onLeave!({} as ScrollTrigger))
+    expect(palco.liberar).toHaveBeenCalledTimes(1)
+    act(() => cfg.onLeaveBack!({} as ScrollTrigger))
+    expect(palco.liberar).toHaveBeenCalledTimes(2)
   })
 
   it('limpa o ScrollTrigger ao desmontar', () => {
