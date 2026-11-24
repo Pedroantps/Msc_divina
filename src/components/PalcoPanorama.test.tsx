@@ -9,7 +9,7 @@ import { PalcoPanorama } from './PalcoPanorama'
 vi.mock('../lib/camera/motor', () => ({ criarMotor: vi.fn() }))
 
 const criarMotorMock = vi.mocked(criarMotor)
-const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), destruir: vi.fn() }
+const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), liberar: vi.fn(), definirDpr: vi.fn(), destruir: vi.fn() }
 let opcoesRecebidas: OpcoesMotor | undefined
 
 /** ResizeObserver falso: guarda o callback para o teste disparar. */
@@ -73,6 +73,13 @@ describe('PalcoPanorama', () => {
     expect(motor.definirEstado).toHaveBeenCalledWith(e)
   })
 
+  it('ref.liberar() solta as texturas do motor sem destruí-lo', () => {
+    const { ref } = montar()
+    ref.current!.liberar!()
+    expect(motor.liberar).toHaveBeenCalledTimes(1)
+    expect(motor.destruir).not.toHaveBeenCalled()
+  })
+
   it('mostra o pôster da cena atual', () => {
     const { ref, container } = montar()
     const poster = container.querySelector('img')!
@@ -81,11 +88,14 @@ describe('PalcoPanorama', () => {
     expect(poster.getAttribute('src')).toBe(posteres[2])
   })
 
-  it('aoFalhar é chamado em webglcontextlost', () => {
-    const { aoFalhar } = montar()
-    expect(aoFalhar).not.toHaveBeenCalled()
+  it('a falha do motor chega ao aoFalhar mais recente, sem recriar o motor', () => {
+    const { aoFalhar, rerender } = montar()
+    const novo = vi.fn()
+    rerender(<PalcoPanorama ref={createRef()} panoramas={panoramas} posteres={posteres} dpr={2} aoFalhar={novo} />)
+    expect(criarMotorMock).toHaveBeenCalledTimes(1)
     opcoesRecebidas!.aoFalhar()
-    expect(aoFalhar).toHaveBeenCalledTimes(1)
+    expect(novo).toHaveBeenCalledTimes(1)
+    expect(aoFalhar).not.toHaveBeenCalled()
   })
 
   it('criarMotor que lança chama aoFalhar e mantém o pôster', () => {
@@ -102,10 +112,64 @@ describe('PalcoPanorama', () => {
     const { container } = montar()
     const canvas = container.querySelector('canvas')!
     expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
-    opcoesRecebidas!.aoPronto!(true)
+    opcoesRecebidas!.aoPronto!(true, { aPronta: true })
     expect(canvas).toHaveClass('palco-panorama__canvas--pronto')
-    opcoesRecebidas!.aoPronto!(false)
+    opcoesRecebidas!.aoPronto!(false, { aPronta: false })
     expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
+  })
+
+  describe('pôster', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('some depois que o canvas fica pronto (após o fade) e volta quando deixa de estar', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      expect(poster.hidden).toBe(false)
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
+      opcoesRecebidas!.aoPronto!(false, { aPronta: false })
+      expect(poster.hidden).toBe(false)
+    })
+
+    it('com só b pronta (mistura baixa) o canvas aparece mas o pôster fica', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      const canvas = container.querySelector('canvas')!
+      opcoesRecebidas!.aoPronto!(true, { aPronta: false })
+      vi.advanceTimersByTime(400)
+      expect(canvas).toHaveClass('palco-panorama__canvas--pronto')
+      expect(poster.hidden).toBe(false)
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
+    })
+
+    it('pronto que se desfaz antes do fade não esconde o pôster', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      opcoesRecebidas!.aoPronto!(false, { aPronta: false })
+      vi.advanceTimersByTime(1000)
+      expect(poster.hidden).toBe(false)
+    })
+
+    it('volta a aparecer quando o motor falha', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      const canvas = container.querySelector('canvas')!
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
+      opcoesRecebidas!.aoFalhar()
+      expect(poster.hidden).toBe(false)
+      expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
+    })
   })
 
   it('redimensiona sem recriar o motor', () => {
@@ -117,6 +181,14 @@ describe('PalcoPanorama', () => {
     )
     expect(motor.redimensionar).toHaveBeenCalledWith(800, 600)
     expect(criarMotorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('mudar o dpr não recria o motor e chama definirDpr', () => {
+    const { rerender } = montar()
+    rerender(<PalcoPanorama ref={createRef()} panoramas={panoramas} posteres={posteres} dpr={1} aoFalhar={vi.fn()} />)
+    expect(criarMotorMock).toHaveBeenCalledTimes(1)
+    expect(motor.destruir).not.toHaveBeenCalled()
+    expect(motor.definirDpr).toHaveBeenLastCalledWith(1)
   })
 
   it('desmontar chama destruir', () => {

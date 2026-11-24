@@ -15,7 +15,7 @@ import { FOV_LEITURA, FOV_MIN } from './tipos'
  * Material do panorama: desenha a textura equirretangular numa esfera vista por dentro.
  * As coordenadas da textura saem da direção de cada pixel (não da malha), com a convenção do
  * Photo Sphere Viewer: yaw 0 olha o centro da imagem (-Z), yaw positivo gira para a direita.
- * No avanço, um desfoque radial (zoom blur) puxa as amostras para o centro da vista.
+ * No avanço, um desfoque radial (zoom blur) puxa as amostras para o centro da vista (só na camada `a`).
  */
 
 const vertice = /* glsl */ `
@@ -37,7 +37,7 @@ varying vec3 vDir;
 varying vec2 vUv;
 
 const float PI = 3.141592653589793;
-const int AMOSTRAS = 12;
+const int AMOSTRAS = 20;
 
 vec2 uvDe(vec3 d) {
   float lon = atan(d.x, -d.z);
@@ -55,10 +55,13 @@ void main() {
   if (uAvanco <= 0.0) {
     cor = textureGrad(uTextura, uvDe(d), gx, gy);
   } else {
-    float forca = 0.14 * uAvanco;
+    // Força quadrática: discreta no começo do avanço, cheia só perto dos 55°.
+    float forca = 0.08 * uAvanco * uAvanco;
+    // Deslocamento por pixel (hash do gl_FragCoord): troca as bandas das amostras fixas por grão fino.
+    float h = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
     cor = vec4(0.0);
     for (int i = 0; i < AMOSTRAS; i++) {
-      float t = float(i) / float(AMOSTRAS - 1);
+      float t = (float(i) + h) / float(AMOSTRAS);
       vec3 di = normalize(mix(d, uFrente, forca * t));
       cor += textureGrad(uTextura, uvDe(di), gx, gy);
     }
@@ -118,8 +121,9 @@ export function criarCarregadorTextura(anisotropia: number): Carregador<Texture>
   }
 }
 
+/** Solta a textura da GPU e o bitmap, se ainda existir (depois do upload o motor já o fechou). */
 export function descartarTextura(textura: Texture): void {
-  const imagem = textura.image as ImageBitmap | undefined
+  const imagem = textura.image as ImageBitmap | null | undefined
   textura.dispose()
   if (imagem && typeof imagem.close === 'function') imagem.close()
 }

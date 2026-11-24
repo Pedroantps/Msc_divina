@@ -141,4 +141,20 @@ describe('GerenteTexturas', () => {
     expect(descartar).toHaveBeenCalledWith('t6')
     expect(gerente.obter(5)).toBeUndefined()
   })
+
+  it('liberar() descarta as vivas, aborta as pendentes e o próximo focar recarrega', async () => {
+    const { gerente, pedido, pedidosDe, descartar, carregar } = montar()
+    gerente.focar(5)
+    pedido(4).resolver('t4')
+    pedido(5).resolver('t5')
+    await esperar()
+    gerente.liberar()
+    expect(descartar.mock.calls.map(([t]) => t).sort()).toEqual(['t4', 't5'])
+    expect(pedido(6).sinal.aborted).toBe(true)
+    expect(gerente.obter(5)).toBeUndefined()
+
+    carregar.mockClear()
+    gerente.focar(5)
+    expect(pedidosDe().sort((x, y) => x - y)).toEqual([4, 5, 6])
+  })
 })
