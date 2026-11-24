@@ -112,9 +112,9 @@ describe('PalcoPanorama', () => {
     const { container } = montar()
     const canvas = container.querySelector('canvas')!
     expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
-    opcoesRecebidas!.aoPronto!(true)
+    opcoesRecebidas!.aoPronto!(true, { aPronta: true })
     expect(canvas).toHaveClass('palco-panorama__canvas--pronto')
-    opcoesRecebidas!.aoPronto!(false)
+    opcoesRecebidas!.aoPronto!(false, { aPronta: false })
     expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
   })
 
@@ -129,19 +129,32 @@ describe('PalcoPanorama', () => {
     it('some depois que o canvas fica pronto (após o fade) e volta quando deixa de estar', () => {
       const { container } = montar()
       const poster = container.querySelector('img')!
-      opcoesRecebidas!.aoPronto!(true)
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
       expect(poster.hidden).toBe(false)
       vi.advanceTimersByTime(400)
       expect(poster.hidden).toBe(true)
-      opcoesRecebidas!.aoPronto!(false)
+      opcoesRecebidas!.aoPronto!(false, { aPronta: false })
       expect(poster.hidden).toBe(false)
+    })
+
+    it('com só b pronta (mistura baixa) o canvas aparece mas o pôster fica', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      const canvas = container.querySelector('canvas')!
+      opcoesRecebidas!.aoPronto!(true, { aPronta: false })
+      vi.advanceTimersByTime(400)
+      expect(canvas).toHaveClass('palco-panorama__canvas--pronto')
+      expect(poster.hidden).toBe(false)
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
     })
 
     it('pronto que se desfaz antes do fade não esconde o pôster', () => {
       const { container } = montar()
       const poster = container.querySelector('img')!
-      opcoesRecebidas!.aoPronto!(true)
-      opcoesRecebidas!.aoPronto!(false)
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
+      opcoesRecebidas!.aoPronto!(false, { aPronta: false })
       vi.advanceTimersByTime(1000)
       expect(poster.hidden).toBe(false)
     })
@@ -150,7 +163,7 @@ describe('PalcoPanorama', () => {
       const { container } = montar()
       const poster = container.querySelector('img')!
       const canvas = container.querySelector('canvas')!
-      opcoesRecebidas!.aoPronto!(true)
+      opcoesRecebidas!.aoPronto!(true, { aPronta: true })
       vi.advanceTimersByTime(400)
       expect(poster.hidden).toBe(true)
       opcoesRecebidas!.aoFalhar()

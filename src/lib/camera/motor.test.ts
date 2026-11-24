@@ -303,12 +303,12 @@ describe('criarMotor', () => {
       await microtarefas()
       rodarOcioso()
       rodarQuadros()
-      expect(aoPronto).toHaveBeenLastCalledWith(true)
+      expect(aoPronto).toHaveBeenLastCalledWith(true, { aPronta: true })
 
       motor.liberar()
       expect(descartar).toHaveBeenCalledTimes(1)
       expect(pedido(1).sinal.aborted).toBe(true)
-      expect(aoPronto).toHaveBeenLastCalledWith(false)
+      expect(aoPronto).toHaveBeenLastCalledWith(false, { aPronta: false })
 
       carregador.mockClear()
       motor.definirEstado(estado(0))
@@ -340,7 +340,17 @@ describe('criarMotor', () => {
       await microtarefas()
       rodarOcioso()
       rodarQuadros()
-      expect(aoPronto).toHaveBeenLastCalledWith(true)
+      expect(aoPronto).toHaveBeenLastCalledWith(true, { aPronta: false })
+    })
+
+    it('com a textura de a, avisa aPronta', async () => {
+      const { motor, pedido, aoPronto } = montar()
+      motor.definirEstado(avanco(0.05))
+      pedido(0).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarQuadros()
+      expect(aoPronto).toHaveBeenLastCalledWith(true, { aPronta: true })
     })
 
     it('com mistura 0, só a textura de b não basta', async () => {
@@ -350,7 +360,7 @@ describe('criarMotor', () => {
       await microtarefas()
       rodarOcioso()
       rodarQuadros()
-      expect(aoPronto).not.toHaveBeenCalledWith(true)
+      expect(aoPronto).not.toHaveBeenCalledWith(true, expect.anything())
     })
   })
 

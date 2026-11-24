@@ -51,12 +51,12 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
     const caixa = raiz.current!
     let timerPoster: ReturnType<typeof setTimeout> | undefined
 
-    // Com o panorama na tela o pôster sai (deixa de ser composto por baixo do canvas);
-    // volta na hora se a textura some ou se o motor falha.
-    const mostrar = (pronto: boolean) => {
+    // Com a cena `a` na tela o pôster sai (deixa de ser composto por baixo do canvas);
+    // volta na hora se ela some ou se o motor falha. Só `b` em mistura baixa não basta.
+    const mostrar = (pronto: boolean, aPronta = pronto) => {
       clearTimeout(timerPoster)
       el.classList.toggle(CLASSE_PRONTO, pronto)
-      if (!pronto) {
+      if (!aPronta) {
         if (poster.current) poster.current.hidden = false
         return
       }
@@ -73,7 +73,7 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
           mostrar(false)
           aoFalharAtual.current()
         },
-        aoPronto: mostrar,
+        aoPronto: (pronto, { aPronta }) => mostrar(pronto, aPronta),
       })
     } catch (erro) {
       console.error(erro)

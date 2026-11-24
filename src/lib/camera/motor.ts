@@ -19,8 +19,12 @@ export interface OpcoesMotor {
   dpr: number
   /** Contexto WebGL perdido: quem usa o motor troca para o palco de fotos. */
   aoFalhar: () => void
-  /** Avisa se há panorama na tela (`a`, ou `b` com mistura > 0); enquanto não houver, vale o pôster. */
-  aoPronto?: (pronto: boolean) => void
+  /**
+   * Avisa se há panorama na tela (`a`, ou `b` com mistura > 0): é o que mostra o canvas.
+   * `aPronta` diz se a cena `a` está desenhada; só então o pôster pode sair (com `b` em
+   * mistura baixa a tela ficaria quase vazia sem ele).
+   */
+  aoPronto?: (pronto: boolean, detalhe: { aPronta: boolean }) => void
   /** Carregador das texturas; o padrão é `fetch` + `createImageBitmap` (injetável nos testes). */
   carregador?: Carregador<Texture>
 }
@@ -144,6 +148,14 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
   let estado: EstadoCamera | null = null
   let quadro = 0
   let pronto: boolean | null = null
+  let aPronta: boolean | null = null
+
+  function avisarPronto(agora: boolean, aAgora: boolean) {
+    if (agora === pronto && aAgora === aPronta) return
+    pronto = agora
+    aPronta = aAgora
+    opcoes.aoPronto?.(agora, { aPronta: aAgora })
+  }
   let perdido = false
   /** Cena cuja janela o gerente mantém (null: nada focado ainda, ou liberado). */
   let focada: number | null = null
@@ -189,11 +201,8 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       renderer.render(camadaB.cena, camadaB.camera)
     }
     // Visível se alguma camada desenhou algo: `a`, ou `b` durante o avanço.
-    const agora = texA !== undefined || (texB !== undefined && mistura > 0)
-    if (agora !== pronto) {
-      pronto = agora
-      opcoes.aoPronto?.(agora)
-    }
+    const aAgora = texA !== undefined
+    avisarPronto(aAgora || (texB !== undefined && mistura > 0), aAgora)
   }
 
   function agendar() {
@@ -275,10 +284,7 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       focada = null
       estado = null
       gerente.liberar()
-      if (pronto !== false) {
-        pronto = false
-        opcoes.aoPronto?.(false)
-      }
+      avisarPronto(false, false)
     },
     destruir() {
       if (quadro) cancelAnimationFrame(quadro)
