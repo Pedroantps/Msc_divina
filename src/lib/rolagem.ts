@@ -10,7 +10,11 @@ export function iniciarRolagemSuave(): () => void {
   // O Lenis mede a página com ResizeObserver: sem ele (navegador antigo, jsdom) fica a rolagem nativa.
   if (typeof ResizeObserver === 'undefined') return () => {}
   if (lenis) lenis.destroy()
-  const instancia = new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false, autoRaf: false })
+  const instancia = new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false,
+    autoRaf: false,
+    // O tour 360° abre num <dialog>: o gesto dentro dele não pode rolar a página por baixo.
+    prevent: (no) => no.closest?.('dialog[open]') != null,
+  })
   lenis = instancia
 
   instancia.on('scroll', ScrollTrigger.update)
