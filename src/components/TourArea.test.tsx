@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { suportaWebGL } from '../lib/suportaWebGL'
 import { areasDoNavio } from '../data/areas'
+import { pausarRolagem, retomarRolagem } from '../lib/rolagem'
 import { TourArea } from './TourArea'
 
 vi.mock('../lib/suportaWebGL', () => ({ suportaWebGL: vi.fn(() => true) }))
+vi.mock('../lib/rolagem', () => ({ pausarRolagem: vi.fn(), retomarRolagem: vi.fn() }))
 vi.mock('@photo-sphere-viewer/core', () => ({ Viewer: vi.fn() }))
 vi.mock('@photo-sphere-viewer/core/index.css', () => ({}))
 vi.mock('@photo-sphere-viewer/gyroscope-plugin', () => ({ GyroscopePlugin: class GyroscopePlugin {} }))
@@ -234,6 +236,23 @@ describe('TourArea', () => {
     expect(document.body.style.overflow).toBe('hidden')
     await usuario.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('pausa a rolagem suave ao abrir e retoma ao fechar', async () => {
+    vi.mocked(pausarRolagem).mockClear()
+    vi.mocked(retomarRolagem).mockClear()
+    const usuario = await abrir()
+    expect(pausarRolagem).toHaveBeenCalledTimes(1)
+    expect(retomarRolagem).not.toHaveBeenCalled()
+    await usuario.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(retomarRolagem).toHaveBeenCalledTimes(1)
+  })
+
+  it('retoma a rolagem suave se for desmontado aberto', () => {
+    vi.mocked(retomarRolagem).mockClear()
+    const { unmount } = render(<Casa inicial />)
+    unmount()
+    expect(retomarRolagem).toHaveBeenCalled()
   })
 
   it('libera a rolagem se for desmontado aberto', () => {

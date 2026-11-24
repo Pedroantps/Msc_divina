@@ -19,8 +19,6 @@ export interface Area {
   titulo?: string
   descricao: string
   imagem: string
-  /** Faixa panorâmica larga usada no giro de câmera do Percurso (/faixa/<id>.webp). */
-  faixa?: string
   /** Panorama principal (o da primeira cena, quando há cenas). */
   panorama?: string
   /** Yaw inicial do panorama principal, em graus. */

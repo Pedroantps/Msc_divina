@@ -9,10 +9,15 @@ import { areasDoNavio } from './data/areas'
 import { lugaresBuzios } from './data/buzios'
 import { capas } from './data/capas'
 import { capitulos } from './data/capitulos'
+import { useReducedMotion } from './hooks/useReducedMotion'
+import { useRolagemSuave } from './lib/rolagem'
 
 const todas = [...areasDoNavio, ...lugaresBuzios]
 
 export default function App() {
+  // Rolagem suave (Lenis) no site todo, desligada com reduced motion.
+  const reduzido = useReducedMotion()
+  useRolagemSuave(!reduzido)
   return (
     <>
       <a className="pular-conteudo" href="#conteudo">

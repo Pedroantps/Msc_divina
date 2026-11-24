@@ -12,13 +12,12 @@ const cena = (pasta: string, nome: string, deck: number | string | undefined, ya
   yaw,
 })
 
-type AreaSemPanorama = Omit<Area, 'panorama' | 'yaw' | 'cenas' | 'categoria' | 'imagem' | 'faixa' | 'credito'> & { titulo: string }
+type AreaSemPanorama = Omit<Area, 'panorama' | 'yaw' | 'cenas' | 'categoria' | 'imagem' | 'credito'> & { titulo: string }
 
 const area = (dados: AreaSemPanorama, cenas: Cena[]): Area => ({
   ...dados,
   categoria: 'navio',
   imagem: `/img/${dados.id}.webp`,
-  faixa: `/faixa/${dados.id}.webp`,
   panorama: cenas[0].panorama,
   yaw: cenas[0].yaw,
   cenas,

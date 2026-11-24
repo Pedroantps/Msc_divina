@@ -23,5 +23,3 @@ it('aceita panorama válido', () =>
   expect(validarAreas([{ ...base, panorama: '/pano/teatro.webp' }])).toEqual([]))
 it('acusa área do navio sem título', () =>
   expect(validarAreas([{ ...base, titulo: undefined }])).toContain('título faltando: teatro'))
-it('acusa faixa fora de /faixa/', () =>
-  expect(validarAreas([{ ...base, faixa: '/img/teatro.webp' }])).toContain('faixa inválida: teatro'))

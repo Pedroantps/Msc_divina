@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, type FocusEvent } from 'react'
 import type { Area } from '../data/tipos'
 import { useFavoritos } from '../hooks/useFavoritos'
-import { useReducedMotion } from '../hooks/useReducedMotion'
 import { srcSetDe } from '../lib/imagens'
 import { gsap, useGSAP } from '../lib/gsap'
+import { rolarPara } from '../lib/rolagem'
 import { CtaAcento } from './CtaAcento'
 import { ImagemComFallback } from './ImagemComFallback'
 import { RotaSvg } from './RotaSvg'
@@ -31,7 +31,6 @@ const CONSULTA_PARALLAX = '(min-width: 48rem) and (prefers-reduced-motion: no-pr
 
 export function SelecaoFavoritos({ areas }: SelecaoFavoritosProps) {
   const secaoRef = useRef<HTMLElement>(null)
-  const reduzido = useReducedMotion()
   const ids = useMemo(() => areas.map((a) => a.id), [areas])
   const { selecionados, alternar, limpar } = useFavoritos(ids)
 
@@ -69,10 +68,10 @@ export function SelecaoFavoritos({ areas }: SelecaoFavoritosProps) {
       }
       if (!teclado) return
       requestAnimationFrame(() => {
-        alvo.scrollIntoView({ block: 'center', behavior: reduzido ? 'auto' : 'smooth' })
+        rolarPara(alvo, { bloco: 'center' })
       })
     },
-    [reduzido],
+    [],
   )
 
   const cartao = (a: Area, indice: number) => {
