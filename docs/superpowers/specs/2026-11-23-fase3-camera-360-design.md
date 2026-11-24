@@ -82,15 +82,19 @@ coreografia respeita esse limite (ver 5.3).
 
 ### 5.2 Coreografia por parada (altura ~200svh)
 
+Revisada após as revisões de sensação e desempenho (24/11): avanço mais longo, giro menor e chegada menos aberta.
+
 | Progresso | Câmera | Texto |
 |---|---|---|
-| 0,00–0,15 | chega: FOV 110° → 95°, mistura da cena anterior termina | — |
-| 0,15–0,70 | giro lento de ~70° (yaw), pitch oscila ±4°, FOV 95° → 85° | título entra, CTA "Ver em 360°" |
-| 0,70–0,85 | vira para `saida.yaw` | texto sai |
-| 0,85–1,00 | avanço: FOV 85° → 55° + desfoque radial; mistura → próxima cena | — |
+| 0,00–0,15 | chega: FOV 100° → 92°, mistura da cena anterior termina | — |
+| 0,15–0,62 | giro lento de 55° (yaw), pitch de −4° a +4°, FOV 92° → 85° | título e CTA "Ver em 360°" (janela 0,18–0,62) |
+| 0,62–0,78 | vira 22,5° para `saida.yaw` (yaw+50) | texto sai |
+| 0,78–1,00 | avanço: FOV 85° → 55° + desfoque radial só na cena atual; mistura em smoothstep(0,35; 1) | — |
 
-Velocidade máxima de giro: 90° por tela rolada (contra enjoo). A posição do texto alterna
-esquerda/centro/direita como hoje, com o véu de contraste.
+O gatilho do Percurso mede (2N−1) telas, então 1 unidade de progresso ≈ 1,93 tela. Velocidade máxima de giro:
+90° por tela rolada (o trecho mais rápido fica em ~73°/tela). A última área não avança: o FOV fica em 85°.
+Em retrato o FOV é multiplicado por 100/85 (máx. 115°). A posição do texto alterna esquerda/centro/direita
+como antes, com o véu de contraste.
 
 ### 5.3 Nitidez
 
