@@ -367,4 +367,33 @@ describe('criarMotor', () => {
       expect(fragmentShader).toMatch(/0\.08\s*\*\s*uAvanco\s*\*\s*uAvanco/)
     })
   })
+
+  describe('FOV em retrato', () => {
+    async function fovDesenhado(l: number, a: number, fov: number) {
+      const { motor, renderer, pedido } = montar()
+      const fovs: number[] = []
+      renderer.render.mockImplementation((_cena: Scene, camera: PerspectiveCamera) => {
+        fovs.push(camera.fov)
+      })
+      motor.redimensionar(l, a)
+      motor.definirEstado(estado(0, fov))
+      pedido(0).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarQuadros()
+      return fovs[fovs.length - 1]
+    }
+
+    it('em retrato (aspect 0,46) o FOV 85 vira ≈ 100', async () => {
+      expect(await fovDesenhado(460, 1000, 85)).toBeCloseTo(100, 5)
+    })
+
+    it('em paisagem (aspect 1,6) o FOV fica como está', async () => {
+      expect(await fovDesenhado(1600, 1000, 85)).toBe(85)
+    })
+
+    it('em retrato o FOV é limitado a 115°', async () => {
+      expect(await fovDesenhado(390, 844, 110)).toBe(115)
+    })
+  })
 })

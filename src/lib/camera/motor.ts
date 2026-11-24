@@ -43,12 +43,25 @@ function criarCamada(geometria: SphereGeometry): Camada {
 
 const frente = new Vector3()
 
+/** Em retrato o FOV vertical da coreografia abre por este fator (85° → 100°), até FOV_RETRATO_MAX. */
+const FATOR_RETRATO = 100 / 85
+const FOV_RETRATO_MAX = 115
+
+/**
+ * O FOV da coreografia vale como vertical e foi aprovado em paisagem. Em retrato (aspect < 1)
+ * a vista ficaria estreita demais na horizontal, então ele abre um pouco.
+ */
+function fovDaCamera(fov: number, aspect: number): number {
+  return aspect < 1 ? Math.min(FOV_RETRATO_MAX, fov * FATOR_RETRATO) : fov
+}
+
 /** Aponta a câmera da camada para a vista e prepara os uniforms. */
 function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: number, desfocar: boolean): void {
   c.camera.rotation.y = -MathUtils.degToRad(vista.yaw)
   c.camera.rotation.x = MathUtils.degToRad(vista.pitch)
-  if (c.camera.fov !== vista.fov) {
-    c.camera.fov = vista.fov
+  const fov = fovDaCamera(vista.fov, c.camera.aspect)
+  if (c.camera.fov !== fov) {
+    c.camera.fov = fov
     c.camera.updateProjectionMatrix()
   }
   c.camera.updateMatrixWorld()
