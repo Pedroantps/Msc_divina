@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollTrigger, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useCapacidade3D } from '../hooks/useCapacidade3D'
@@ -6,7 +6,7 @@ import { estadoNaRolagem } from '../lib/camera/coreografia'
 import { panoramaPara } from '../lib/imagens'
 import { rolarParaPosicao } from '../lib/rolagem'
 import type { ControlePalco, EstadoCamera, RoteiroArea } from '../lib/camera/tipos'
-import { roteiros as roteirosPadrao } from '../data/roteiro'
+import { roteiros as roteirosPadrao, roteiroPadrao } from '../data/roteiro'
 import type { Area } from '../data/tipos'
 import { alvoDaParada, paradaAtiva } from './percursoUtil'
 import { CtaAcento } from './CtaAcento'
@@ -20,13 +20,20 @@ interface PercursoProps {
   areas: Area[]
   /** Âncora do capítulo (a barra de capítulos aponta para ela). */
   id?: string
-  /** Roteiros de câmera, um por área (os testes injetam os seus). */
+  /** Roteiros de câmera por área, achados por areaId; área sem roteiro usa o padrão (os testes injetam os seus). */
   roteiros?: RoteiroArea[]
 }
 
 const POSICOES = ['esquerda', 'centro', 'direita'] as const
 
-export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadrao }: PercursoProps) {
+export function Percurso({ areas: todasAsAreas, id = 'capitulo-navio', roteiros: sobrescritas = roteirosPadrao }: PercursoProps) {
+  // Área sem panorama não tem o que mostrar no palco 360°: fica fora das paradas e da coreografia,
+  // então progresso, roteiros e palco usam todos o mesmo N.
+  const areas = useMemo(() => todasAsAreas.filter((a) => a.panorama), [todasAsAreas])
+  const roteiros = useMemo(
+    () => areas.map((a) => sobrescritas.find((r) => r.areaId === a.id) ?? roteiroPadrao(a)),
+    [areas, sobrescritas],
+  )
   const raiz = useRef<HTMLElement>(null)
   const paradasRef = useRef<HTMLDivElement>(null)
   const palco = useRef<ControlePalco>(null)
@@ -131,7 +138,7 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
             (usaPanorama ? (
               <PalcoPanorama
                 ref={palco}
-                panoramas={areas.map((a) => panoramaPara(a.panorama!, capacidade))}
+                panoramas={areas.map((a) => panoramaPara(a.panorama ?? '', capacidade))}
                 posteres={areas.map((a) => a.imagem)}
                 dpr={dpr}
                 aoFalhar={aoFalhar}

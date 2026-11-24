@@ -6,7 +6,7 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { suportaWebGL } from '../lib/suportaWebGL'
 import { panoramaPara } from '../lib/imagens'
 import { estadoNaRolagem } from '../lib/camera/coreografia'
-import { roteiros } from '../data/roteiro'
+import { roteiros, roteiroPadrao } from '../data/roteiro'
 import { areasDoNavio } from '../data/areas'
 import type { Capacidade } from '../lib/camera/tipos'
 import { Percurso } from './Percurso'
@@ -223,6 +223,32 @@ describe('palco', () => {
     palco.definirEstado.mockClear()
     act(() => cfg.onUpdate!({ progress: 0.5 } as ScrollTrigger))
     expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.5 * areasDoNavio.length, roteiros))
+  })
+
+  it('área sem panorama fica fora das paradas e do palco, sem lançar erro', () => {
+    const semPanorama = { ...cabines, id: 'sem-panorama', panorama: undefined }
+    const areas = [areasDoNavio[0], semPanorama, areasDoNavio[1]]
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    const { container } = render(<Percurso areas={areas} />)
+    chegarPerto()
+    expect(paradas(container).map((s) => s.id)).toEqual([areasDoNavio[0].id, areasDoNavio[1].id])
+    expect(palco.propsPanorama!.panoramas).toHaveLength(2)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    palco.definirEstado.mockClear()
+    act(() => cfg.onUpdate!({ progress: 0.5 } as ScrollTrigger))
+    const dois = [roteiros[0], roteiros[1]]
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(1, dois))
+  })
+
+  it('área sem roteiro nas sobrescritas usa o roteiro padrão', () => {
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    render(<Percurso areas={areasDoNavio.slice(0, 2)} roteiros={[]} />)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    chegarPerto()
+    act(() => cfg.onUpdate!({ progress: 0.25 } as ScrollTrigger))
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(
+      estadoNaRolagem(0.5, [roteiroPadrao(areasDoNavio[0]), roteiroPadrao(areasDoNavio[1])]),
+    )
   })
 
   it('aceita roteiros injetados por prop', () => {
