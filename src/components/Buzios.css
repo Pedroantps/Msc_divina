@@ -1,56 +1,148 @@
 .buzios {
   position: relative;
   z-index: 2;
-  background: var(--cor-fundo-buzios);
+  background: var(--cor-base-clara);
+  color: var(--cor-texto-escuro);
 }
 
 .buzios__abertura {
   position: relative;
   display: flex;
   align-items: flex-end;
-  height: 100svh;
+  min-height: 100svh;
   overflow: hidden;
-  background: var(--cor-fundo-buzios);
+  background: var(--cor-base-escura);
+  color: var(--cor-texto-claro);
+}
+
+/* Maior que a abertura: o parallax (±6% + zoom) nunca mostra o fundo preto nas bordas. */
+.buzios__midia {
+  position: absolute;
+  inset: -8% 0;
+  will-change: transform;
 }
 
 .buzios__img {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.buzios__texto {
+.buzios__abertura::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--cor-sombra), transparent 55%);
+  pointer-events: none;
+}
+
+.buzios__capa-texto {
   position: relative;
+  z-index: 1;
   width: 100%;
-  padding: 4rem 1.5rem 3rem;
-  background: linear-gradient(to top, var(--cor-sombra), transparent);
+  padding: 0 var(--margem) calc(var(--margem) + var(--barra-altura));
 }
 
-.buzios__titulo {
-  margin: 0 0 0.75rem;
+.buzios__palavra {
+  margin: 0;
+  color: var(--cor-texto-claro);
+}
+
+.buzios__subtitulo {
+  margin: 1rem 0 0;
+  font-family: var(--fonte-texto);
+  font-size: var(--t-subtitulo);
+  color: var(--cor-texto-suave-claro);
+}
+
+.buzios__numeros {
+  padding: clamp(6rem, 14vw, 12rem) var(--margem) 0;
+}
+
+.buzios__lugares {
+  display: grid;
+  gap: clamp(4rem, 10vw, 9rem);
+  padding: clamp(4rem, 10vw, 9rem) var(--margem);
+}
+
+.buzios__lugar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: center;
+  scroll-margin-top: var(--barra-altura);
+}
+
+/* Padrão: texto à esquerda e foto à direita; o invertido troca os lados. */
+.buzios__corpo {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.buzios__foto {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.buzios__lugar--invertido .buzios__corpo {
+  grid-column: 2;
+}
+
+.buzios__lugar--invertido .buzios__foto {
+  grid-column: 1;
+}
+
+.buzios__foto-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.buzios__lugar--invertido .buzios__foto-img {
+  aspect-ratio: 3 / 2;
+}
+
+.buzios__frase {
+  margin: 0 0 1.5rem;
   font-family: var(--fonte-titulo);
-  font-size: clamp(2.25rem, 9vw, 4rem);
-  line-height: 1.05;
-  color: var(--cor-texto);
+  font-weight: 500;
+  text-wrap: balance;
+  font-size: var(--t-titulo);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
 }
 
-.buzios__aviso {
+.buzios__nome {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--cor-texto-suave-escuro);
+}
+
+.buzios__descricao {
+  max-width: 34ch;
   margin: 0;
   font-family: var(--fonte-texto);
-  font-size: 1rem;
-  color: var(--cor-destaque);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--cor-texto-suave-escuro);
 }
 
-.buzios .areas {
-  background: var(--cor-fundo-buzios);
-}
+@media (max-width: 760px) {
+  .buzios__lugar {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
 
-.buzios .area {
-  background: var(--cor-fundo-buzios);
-}
+  .buzios__foto,
+  .buzios__lugar--invertido .buzios__foto {
+    grid-column: 1;
+    grid-row: 1;
+  }
 
-.buzios .areas__secoes .area {
-  background: transparent;
+  .buzios__corpo,
+  .buzios__lugar--invertido .buzios__corpo {
+    grid-column: 1;
+    grid-row: 2;
+  }
 }

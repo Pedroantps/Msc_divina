@@ -1,0 +1,32 @@
+.creditos {
+  padding: clamp(3rem, 8vw, 6rem) var(--margem);
+  background: var(--cor-base-clara);
+  color: var(--cor-texto-escuro);
+  font-family: var(--fonte-texto);
+}
+
+.creditos__titulo {
+  margin: 0 0 2rem;
+  font-family: var(--fonte-titulo);
+  font-size: var(--t-titulo);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.creditos__lista {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--cor-marca-dagua);
+}
+
+.creditos__item {
+  flex: 1 1 18rem;
+  padding: 1rem 1.25rem 1rem 0;
+  border-bottom: 1px solid var(--cor-marca-dagua);
+  color: var(--cor-texto-suave-escuro);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}

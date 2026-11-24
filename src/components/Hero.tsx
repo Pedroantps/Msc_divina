@@ -8,15 +8,22 @@ interface HeroProps {
   imagem: string
   alt?: string
   alvo: { x: number; y: number }
+  subtitulo?: string
 }
 
-export function Hero({ imagem, alt = 'O navio MSC Divina visto de fora', alvo }: HeroProps) {
+export function Hero({
+  imagem,
+  alt = 'O navio MSC Divina visto de fora',
+  alvo,
+  subtitulo = 'Cruzeiro em família · Búzios',
+}: HeroProps) {
   const secaoRef = useRef<HTMLElement>(null)
   const reduzido = useReducedMotion()
 
   useGSAP(
     () => {
       if (reduzido) return
+      const origem = `${alvo.x}% ${alvo.y}%`
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
@@ -27,9 +34,11 @@ export function Hero({ imagem, alt = 'O navio MSC Divina visto de fora', alvo }:
           invalidateOnRefresh: true,
         },
       })
-      tl.fromTo('.hero__midia', { scale: 1, transformOrigin: `${alvo.x}% ${alvo.y}%` }, { scale: 3, transformOrigin: `${alvo.x}% ${alvo.y}%`, duration: 1 }, 0)
-      tl.fromTo('.hero__titulo', { opacity: 1 }, { opacity: 0, duration: 1 / 3 }, 0)
-      tl.to(secaoRef.current, { opacity: 0, duration: 0.15 }, 0.85)
+      tl.fromTo('.hero__midia', { scale: 1, transformOrigin: origem }, { scale: 2.6, transformOrigin: origem, duration: 1 }, 0)
+      tl.fromTo('.hero__titulo', { opacity: 1, yPercent: 0 }, { opacity: 0, yPercent: -25, duration: 0.3 }, 0)
+      tl.fromTo('.hero__subtitulo', { opacity: 1 }, { opacity: 0, duration: 0.2 }, 0)
+      // Corta limpo para a próxima seção: nos últimos ~15% da rolagem tudo escurece até a cor-base-escura.
+      tl.fromTo('.hero__escurecer', { opacity: 0 }, { opacity: 1, duration: 0.15 }, 0.85)
     },
     { scope: secaoRef, dependencies: [reduzido, alvo.x, alvo.y], revertOnUpdate: true },
   )
@@ -39,6 +48,7 @@ export function Hero({ imagem, alt = 'O navio MSC Divina visto de fora', alvo }:
       ref={secaoRef}
       className="hero"
       data-testid="hero"
+      data-tema="escuro"
       data-estatico={reduzido ? 'true' : undefined}
     >
       <div className="hero__palco">
@@ -51,9 +61,14 @@ export function Hero({ imagem, alt = 'O navio MSC Divina visto de fora', alvo }:
             fetchpriority="high"
           />
         </div>
-        <div className="hero__degrade">
-          <h1 className="hero__titulo">MSC Divina</h1>
-        </div>
+        <div className="hero__degrade-topo" aria-hidden="true" />
+        <div className="hero__degrade" aria-hidden="true" />
+        <p className="hero__subtitulo rotulo">{subtitulo}</p>
+        <h1 className="hero__titulo">
+          <span className="hero__selo rotulo">MSC</span>{' '}
+          <span className="hero__palavra exibicao">Divina</span>
+        </h1>
+        <div className="hero__escurecer" aria-hidden="true" />
       </div>
     </section>
   )

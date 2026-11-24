@@ -12,6 +12,9 @@ export function validarAreas(areas: Area[]): string[] {
     if (a.descricao.length > 160) erros.push(`descrição longa: ${a.id}`)
     if (!a.imagem.startsWith('/img/') || !a.imagem.endsWith('.webp')) erros.push(`imagem inválida: ${a.id}`)
     if (a.panorama !== undefined && (!a.panorama.startsWith('/pano/') || !a.panorama.endsWith('.webp'))) erros.push(`panorama inválido: ${a.id}`)
+    if (a.categoria === 'navio' && !a.titulo?.trim()) erros.push(`título faltando: ${a.id}`)
+    if (a.titulo && a.titulo.length > 40) erros.push(`título longo: ${a.id}`)
+    if (a.faixa !== undefined && (!a.faixa.startsWith('/faixa/') || !a.faixa.endsWith('.webp'))) erros.push(`faixa inválida: ${a.id}`)
     // Uma área espalhada pelo navio (ex.: cabines) pode não ter deck único, desde que tenha cenas.
     if (a.categoria === 'navio' && a.deck === undefined && !a.cenas?.length) erros.push(`deck faltando: ${a.id}`)
     const cenasVistas = new Set<string>()

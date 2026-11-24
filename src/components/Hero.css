@@ -1,13 +1,12 @@
 .hero {
-  height: 300svh;
-  background: var(--cor-fundo);
+  height: 220svh;
+  background: var(--cor-base-escura);
+  color: var(--cor-texto-claro);
 }
 
 .hero:not([data-estatico='true']) {
-  /* Fica por cima das áreas (que sobem por baixo dele) e não captura cliques. */
   position: relative;
   z-index: 1;
-  pointer-events: none;
 }
 
 .hero[data-estatico='true'] {
@@ -27,6 +26,10 @@
   will-change: transform;
 }
 
+.hero[data-estatico='true'] .hero__midia {
+  will-change: auto;
+}
+
 .hero__img {
   display: block;
   width: 100%;
@@ -34,20 +37,78 @@
   object-fit: cover;
 }
 
-.hero[data-estatico='true'] .hero__midia {
-  will-change: auto;
+/* Tamanho da palavra: Unbounded fina larga ~3,1em ("Divina"), então 28vw ocupa ~87% da largura. */
+:root {
+  --palavra-hero: clamp(5rem, 28vw, 40rem);
+  /* Base da palavra: acima da barra de capítulos fixa (que ocupa o canto inferior). */
+  --base-hero: calc(var(--margem) + var(--barra-altura) + 0.75rem);
 }
 
+/* Gradiente na base: garante contraste da palavra sem escurecer a foto toda. */
 .hero__degrade {
   position: absolute;
   inset: auto 0 0 0;
-  padding: 4rem 1.5rem 3rem;
-  background: linear-gradient(to top, var(--cor-sombra), transparent);
+  height: 55%;
+  background: linear-gradient(to top, rgb(14 14 16 / 0.75), transparent);
+  pointer-events: none;
+}
+
+/* Degradê suave no topo: dá contraste ao logo claro fixo sobre o céu. */
+.hero__degrade-topo {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 22%;
+  background: linear-gradient(to bottom, rgb(14 14 16 / 0.5), transparent);
+  pointer-events: none;
+}
+
+.hero__subtitulo {
+  position: absolute;
+  left: 4vw;
+  bottom: calc(var(--base-hero) + var(--palavra-hero) * 0.9);
+  margin: 0;
+  color: var(--cor-texto-claro);
+  /* Fica sobre o casco branco do navio: a sombra garante a leitura. */
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6), 0 0 14px rgb(0 0 0 / 0.55);
 }
 
 .hero__titulo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--base-hero);
   margin: 0;
-  font-family: var(--fonte-titulo);
-  font-size: clamp(2.5rem, 12vw, 5rem);
-  color: var(--cor-texto);
+  padding: 0 4vw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--cor-texto-claro);
+  font-weight: inherit;
+}
+
+.hero__palavra {
+  font-size: var(--palavra-hero);
+  white-space: nowrap;
+  display: block;
+}
+
+/* O selo fica acima da palavra, à direita, fora da área da barra de capítulos. */
+.hero__selo {
+  align-self: flex-end;
+  padding-bottom: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .hero__img {
+    object-position: 62% 50%;
+  }
+}
+
+/* Cobre a seção inteira e leva tudo à cor-base-escura no fim da rolagem. */
+.hero__escurecer {
+  position: absolute;
+  inset: 0;
+  background: var(--cor-base-escura);
+  opacity: 0;
+  pointer-events: none;
 }

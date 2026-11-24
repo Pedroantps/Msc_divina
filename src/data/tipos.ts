@@ -15,12 +15,25 @@ export interface Area {
   nome: string
   categoria: Categoria
   deck?: number | string
+  /** Frase curta da parada no Percurso (ex.: "Onde a noite começa"). Só áreas do navio. */
+  titulo?: string
   descricao: string
   imagem: string
+  /** Faixa panorâmica larga usada no giro de câmera do Percurso (/faixa/<id>.webp). */
+  faixa?: string
   /** Panorama principal (o da primeira cena, quando há cenas). */
   panorama?: string
   /** Yaw inicial do panorama principal, em graus. */
   yaw?: number
   cenas?: Cena[]
   credito: string
+}
+
+/** Capítulo do site, mostrado na barra fixa (ex.: "O navio", "Búzios"). */
+export interface Capitulo {
+  id: string
+  nome: string
+  /** id do elemento onde o capítulo começa. */
+  ancora: string
+  tema: 'claro' | 'escuro'
 }

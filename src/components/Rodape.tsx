@@ -1,4 +1,5 @@
 import type { Area } from '../data/tipos'
+import { Creditos } from './Creditos'
 import './Rodape.css'
 
 interface RodapeProps {
@@ -7,22 +8,39 @@ interface RodapeProps {
   creditosExtras?: string[]
 }
 
+const LINKS = [
+  { rotulo: 'Tour oficial da MSC', href: 'https://virtual-tours.msccruises.com/MSC-Divina/en-gb/index.html' },
+  { rotulo: 'Búzios', href: 'https://pt.wikipedia.org/wiki/Arma%C3%A7%C3%A3o_dos_B%C3%BAzios' },
+  { rotulo: 'Wikimedia Commons', href: 'https://commons.wikimedia.org' },
+]
+
+const ANO = new Date().getFullYear()
+
+/** Créditos (seção clara, deduplicados) seguidos do rodapé preto. */
 export function Rodape({ areas, creditosExtras = [] }: RodapeProps) {
-  const creditos = [...new Set([...areas.map((a) => a.credito), ...creditosExtras])]
+  const creditos = [...areas.map((a) => a.credito), ...creditosExtras]
 
   return (
     <footer className="rodape">
-      <h2 className="rodape__titulo">Créditos</h2>
-      <ul className="rodape__lista">
-        {creditos.map((c) => (
-          <li key={c}>{c}</li>
-        ))}
-      </ul>
-      <p className="rodape__tour">
-        <a href="https://virtual-tours.msccruises.com/" target="_blank" rel="noopener noreferrer">
-          Tour virtual oficial da MSC
-        </a>
-      </p>
+      <Creditos creditos={creditos} />
+      <div className="rodape__preto" data-tema="escuro">
+        <div className="rodape__topo">
+          <p className="rodape__marca">MSC Divina</p>
+          <ul className="rodape__links">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <a className="rodape__link rotulo" href={l.href} target="_blank" rel="noopener noreferrer">
+                  {l.rotulo}
+                  <span className="rodape__seta" aria-hidden="true">
+                    ↗
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="rodape__assinatura rotulo">Feito pela família para a família · {ANO}</p>
+      </div>
     </footer>
   )
 }

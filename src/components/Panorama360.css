@@ -6,18 +6,58 @@
   height: 100%;
 }
 
-.panorama__dica {
+.panorama__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.panorama__dica,
+.panorama__aviso {
   position: absolute;
   left: 50%;
-  top: max(1rem, env(safe-area-inset-top));
   margin: 0;
   transform: translateX(-50%);
   padding: 0.5rem 1rem;
   border-radius: 999px;
   background: var(--cor-sombra);
-  color: var(--cor-texto);
+  color: var(--cor-texto-claro);
   font-family: var(--fonte-texto);
   font-size: 0.875rem;
   pointer-events: none;
+}
+
+.panorama__dica {
+  top: max(1rem, env(safe-area-inset-top));
   white-space: nowrap;
+}
+
+.panorama__aviso {
+  top: 8rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  text-align: center;
+}
+
+.panorama__falha {
+  position: absolute;
+  inset: 0;
+}
+
+/* Liga o giroscópio: só aparece em tela de toque com o sensor disponível. */
+.panorama__giro {
+  position: absolute;
+  top: 5rem;
+  right: var(--margem);
+  padding: 0.75rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  background: var(--cor-sombra);
+  color: var(--cor-texto-claro);
+  cursor: pointer;
+}
+
+.panorama__giro[aria-pressed='true'] {
+  border-color: var(--cor-acento);
+  background: var(--cor-acento);
 }
