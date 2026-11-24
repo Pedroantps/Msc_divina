@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ScrollTrigger, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useCapacidade3D } from '../hooks/useCapacidade3D'
+import { estadoNaRolagem } from '../lib/camera/coreografia'
+import { panoramaPara } from '../lib/imagens'
+import type { ControlePalco, EstadoCamera, RoteiroArea } from '../lib/camera/tipos'
+import { roteiros as roteirosPadrao } from '../data/roteiro'
 import type { Area } from '../data/tipos'
 import { CtaAcento } from './CtaAcento'
 import { ImagemComFallback } from './ImagemComFallback'
+import { PalcoFotos } from './PalcoFotos'
+import { PalcoPanorama } from './PalcoPanorama'
 import { TourArea } from './TourArea'
 import './Percurso.css'
 
@@ -11,126 +18,87 @@ interface PercursoProps {
   areas: Area[]
   /** Âncora do capítulo (a barra de capítulos aponta para ela). */
   id?: string
+  /** Roteiros de câmera, um por área (os testes injetam os seus). */
+  roteiros?: RoteiroArea[]
 }
 
 const POSICOES = ['esquerda', 'centro', 'direita'] as const
 
-/** Altura de cada parada, em telas (150svh). */
-const ALTURA_PARADA = 1.5
-/** Quanto do trecho de uma parada o fade entre camadas ocupa. */
-const FADE = 0.15
+/** Faixa de progresso da parada em que o texto fica na tela. */
+const TEXTO_DE = 0.15
+const TEXTO_ATE = 0.7
 
-export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
+/** Parada cujo texto deve aparecer no progresso global, ou null entre textos. */
+function paradaAtiva(progresso: number, total: number): number | null {
+  const i = Math.min(Math.floor(progresso), total - 1)
+  const p = progresso - i
+  return p >= TEXTO_DE && p < TEXTO_ATE ? i : null
+}
+
+export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadrao }: PercursoProps) {
   const raiz = useRef<HTMLElement>(null)
+  const paradasRef = useRef<HTMLDivElement>(null)
+  const palco = useRef<ControlePalco>(null)
+  const ultimoEstado = useRef<EstadoCamera | null>(null)
+  const ativaRef = useRef<number | null>(null)
   const origemFoco = useRef<HTMLElement | null>(null)
   const reduzido = useReducedMotion()
-  // Sem IntersectionObserver todas as faixas montam logo; com ele, só as paradas perto da tela.
-  const [carregadas, setCarregadas] = useState<ReadonlySet<number>>(
-    () => new Set(typeof IntersectionObserver === 'undefined' ? areas.map((_, i) => i) : []),
-  )
+  const capacidade = useCapacidade3D()
+  // O palco só monta com o capítulo a ≤ 1 tela de distância (sem IntersectionObserver, monta logo).
+  const [perto, setPerto] = useState(() => typeof IntersectionObserver === 'undefined')
+  const [falhou, setFalhou] = useState(false)
   const [ativa, setAtiva] = useState<number | null>(null)
   const [tour, setTour] = useState<{ id: string; aberto: boolean }>({ id: areas[0]?.id ?? '', aberto: false })
 
-  // Monta a faixa de uma parada quando ela está a ~2,5 telas de distância.
+  const usaPanorama = capacidade !== 'sem3d' && !falhou
+  const dpr = Math.min(typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1, capacidade === 'alta' ? 2 : 1.5)
+  const aoFalhar = useCallback(() => setFalhou(true), [])
+
   useEffect(() => {
     const el = raiz.current
     if (reduzido || !el || typeof IntersectionObserver === 'undefined') return
     const obs = new IntersectionObserver(
       (entradas) => {
-        const novas = entradas
-          .filter((e) => e.isIntersecting)
-          .map((e) => Number((e.target as HTMLElement).dataset.indice))
-        if (novas.length === 0) return
-        setCarregadas((atual) => (novas.every((i) => atual.has(i)) ? atual : new Set([...atual, ...novas])))
-        for (const e of entradas) if (e.isIntersecting) obs.unobserve(e.target)
+        if (!entradas.some((e) => e.isIntersecting)) return
+        setPerto(true)
+        obs.disconnect()
       },
-      { rootMargin: '250% 0px' },
+      { rootMargin: '100% 0px' },
     )
-    el.querySelectorAll('.parada').forEach((s) => obs.observe(s))
+    obs.observe(el)
     return () => obs.disconnect()
-  }, [reduzido, areas.length])
+  }, [reduzido])
 
-  // Parada ativa: a faixa dela e a da seguinte já contam como carregadas (a próxima não aparece vazia no fade).
-  const montada = (i: number) =>
-    carregadas.has(i) || (ativa !== null && typeof IntersectionObserver !== 'undefined' && (i === ativa || i === ativa + 1))
+  // Palco recém-montado (ou trocado para fotos) recebe o último estado conhecido.
+  useEffect(() => {
+    if (reduzido || !perto) return
+    palco.current?.definirEstado(ultimoEstado.current ?? estadoNaRolagem(0, roteiros))
+  }, [reduzido, perto, usaPanorama, roteiros])
 
   useGSAP(
     () => {
-      if (reduzido) return
-      const secoes = gsap.utils.toArray<HTMLElement>('.parada')
-      const camadas = gsap.utils.toArray<HTMLElement>('.percurso__camada')
-      const giros = gsap.utils.toArray<HTMLElement>('.percurso__giro')
-
-      const ultima = secoes.length - 1
-
-      secoes.forEach((secao, i) => {
-        // O palco sticky solta quando o fim da última parada chega ao fim da tela: o giro e o
-        // texto dela terminam aí ('bottom bottom'), não 100svh depois.
-        const fim = i === ultima ? 'bottom bottom' : 'bottom top'
-        const giro = giros[i]
-        const camada = camadas[i]
-        if (!giro || !camada) return
-
-        // Giro de câmera: a rolagem da parada desliza a faixa de ponta a ponta com leve zoom.
-        gsap.fromTo(
-          giro,
-          { x: 0, scale: 1, transformOrigin: '50% 50%' },
-          {
-            x: () => -Math.max(0, giro.offsetWidth - camada.clientWidth),
-            scale: 1.08,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: secao,
-              start: 'top top',
-              end: fim,
-              scrub: true,
-              invalidateOnRefresh: true,
-              onToggle: (self) => {
-                giro.style.willChange = self.isActive ? 'transform' : ''
-              },
-            },
-          },
-        )
-
-        // Texto: aparece quando a imagem da parada já chegou e sai antes do fade da próxima.
-        ScrollTrigger.create({
-          trigger: secao,
-          start: 'top 10%',
-          end: i === ultima ? 'bottom bottom' : 'bottom 30%',
-          onToggle: (self) => {
-            if (self.isActive) setAtiva(i)
-            else setAtiva((atual) => (atual === i ? null : atual))
-          },
-        })
-
-        if (i === 0) return
-        // Fade curto da camada nova por cima da anterior (≈15% do trecho). A anterior sai da
-        // composição depois, para não manter 14 imagens grandes empilhadas na GPU. Isso é feito
-        // por classe no giro (visibility), sem tocar no autoAlpha que o fade da própria camada controla.
-        const giroAnterior = giros[i - 1]
-        const ocultar = (oculto: boolean) => giroAnterior?.classList.toggle('percurso__giro--oculto', oculto)
-        gsap.fromTo(
-          camada,
-          { autoAlpha: 0 },
-          {
-            autoAlpha: 1,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: secao,
-              start: `top ${FADE * ALTURA_PARADA * 100}%`,
-              end: 'top top',
-              scrub: true,
-              onLeave: () => ocultar(true),
-              onEnterBack: () => ocultar(false),
-              onRefresh: (self) => ocultar(self.progress >= 1),
-            },
-          },
-        )
+      const alvo = paradasRef.current
+      if (reduzido || !alvo) return
+      const total = areas.length
+      ScrollTrigger.create({
+        trigger: alvo,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: true,
+        onUpdate: (s) => {
+          const progresso = s.progress * total
+          const estado = estadoNaRolagem(progresso, roteiros)
+          ultimoEstado.current = estado
+          palco.current?.definirEstado(estado)
+          const nova = paradaAtiva(progresso, total)
+          if (nova !== ativaRef.current) {
+            ativaRef.current = nova
+            setAtiva(nova)
+          }
+        },
       })
-
-      return () => giros.forEach((g) => g.classList.remove('percurso__giro--oculto'))
     },
-    { scope: raiz, dependencies: [reduzido, areas.length], revertOnUpdate: true },
+    { scope: raiz, dependencies: [reduzido, areas.length, roteiros], revertOnUpdate: true },
   )
 
   const abrir = (areaId: string, origem: HTMLElement) => {
@@ -156,21 +124,18 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
     >
       {!reduzido && (
         <div className="percurso__palco" aria-hidden="true">
-          {areas.map((area, i) => (
-            <div key={area.id} className="percurso__camada">
-              <div className="percurso__giro">
-                {montada(i) && area.faixa && (
-                  <ImagemComFallback
-                    className="percurso__faixa"
-                    src={area.faixa}
-                    alt=""
-                    loading="eager"
-                    fetchpriority={i === 0 ? 'high' : undefined}
-                  />
-                )}
-              </div>
-            </div>
-          ))}
+          {perto &&
+            (usaPanorama ? (
+              <PalcoPanorama
+                ref={palco}
+                panoramas={areas.map((a) => panoramaPara(a.panorama!, capacidade))}
+                posteres={areas.map((a) => a.imagem)}
+                dpr={dpr}
+                aoFalhar={aoFalhar}
+              />
+            ) : (
+              <PalcoFotos ref={palco} imagens={areas.map((a) => a.imagem)} />
+            ))}
           <div
             className="percurso__veu"
             data-posicao={ativa !== null ? POSICOES[ativa % POSICOES.length] : undefined}
@@ -178,7 +143,7 @@ export function Percurso({ areas, id = 'capitulo-navio' }: PercursoProps) {
         </div>
       )}
 
-      <div className={reduzido ? 'percurso__lista' : 'percurso__paradas'}>
+      <div ref={paradasRef} className={reduzido ? 'percurso__lista' : 'percurso__paradas'}>
         {areas.map((area, i) => (
           <Parada
             key={area.id}

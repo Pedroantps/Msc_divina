@@ -118,7 +118,6 @@ afterEach(() => {
 
 const spa = areasDoNavio.find((a) => a.id === 'aurea-spa')!
 const cabines = areasDoNavio.find((a) => a.id === 'cabines')!
-const imagens = () => Array.from(document.querySelectorAll('img'))
 const paradas = (c: HTMLElement) => Array.from(c.querySelectorAll<HTMLElement>('section.parada'))
 
 describe('estrutura', () => {
