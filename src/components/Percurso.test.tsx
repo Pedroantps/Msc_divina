@@ -255,14 +255,18 @@ describe('palco', () => {
     expect(ScrollTrigger.getAll()).toHaveLength(0)
   })
 
-  it('foco por teclado numa parada fora da tela leva a rolagem até ela', () => {
+  it('foco por teclado numa parada inativa rola até p 0,4 dela e ativa o texto na hora', () => {
     const rolar = vi.fn()
-    window.HTMLElement.prototype.scrollIntoView = rolar
+    vi.spyOn(window, 'scrollTo').mockImplementation(rolar)
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(500)
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    const botao = within(paradas(container)[3]).getByRole('button', { name: 'Ver em 360°' })
+    const secao = paradas(container)[3]
+    vi.spyOn(secao, 'getBoundingClientRect').mockReturnValue({ top: 1000, height: 800 } as DOMRect)
+    const botao = within(secao).getByRole('button', { name: 'Ver em 360°' })
     act(() => botao.focus())
     expect(rolar).toHaveBeenCalledTimes(1)
-    expect(rolar.mock.contexts[0]).toBe(paradas(container)[3])
+    expect(rolar).toHaveBeenCalledWith({ top: 1500 + 0.4 * 800, behavior: 'auto' })
+    expect(secao.querySelector('.parada__texto')).toHaveAttribute('data-ativa', 'true')
   })
 })
 

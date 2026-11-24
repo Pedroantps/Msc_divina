@@ -97,6 +97,9 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
           }
         },
       })
+      return () => {
+        ativaRef.current = null
+      }
     },
     { scope: raiz, dependencies: [reduzido, areas.length, roteiros], revertOnUpdate: true },
   )
@@ -106,9 +109,15 @@ export function Percurso({ areas, id = 'capitulo-navio', roteiros = roteirosPadr
     setTour({ id: areaId, aberto: true })
   }
 
-  // Foco por teclado numa parada que não está na tela: leva a rolagem até ela.
+  // Foco por teclado numa parada inativa: rola até p≈0,4 dela (onde o texto aparece) e ativa o texto já.
   const aoFocar = (areaId: string, indice: number) => {
-    if (!reduzido && ativa !== indice) document.getElementById(areaId)?.scrollIntoView?.()
+    if (reduzido || ativaRef.current === indice) return
+    const secao = document.getElementById(areaId)
+    if (!secao) return
+    const caixa = secao.getBoundingClientRect()
+    window.scrollTo({ top: caixa.top + window.scrollY + 0.4 * caixa.height, behavior: 'auto' })
+    ativaRef.current = indice
+    setAtiva(indice)
   }
 
   const areaDoTour = areas.find((a) => a.id === tour.id)
