@@ -66,6 +66,13 @@ function quandoOcioso(fn: () => void): () => void {
   return () => clearTimeout(id)
 }
 
+/** Depois do upload a GPU tem a cópia: o bitmap decodificado (~32 MB em 4096 px) pode sair da memória. */
+function soltarImagem(textura: Texture): void {
+  const imagem = textura.image as ImageBitmap | null
+  if (imagem && typeof imagem.close === 'function') imagem.close()
+  textura.image = null
+}
+
 function iguais(x: Vista | null, y: Vista | null): boolean {
   if (x === null || y === null) return x === y
   return x.cena === y.cena && x.yaw === y.yaw && x.pitch === y.pitch && x.fov === y.fov
@@ -159,6 +166,7 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
     pendentes.delete(escolhida)
     renderer.initTexture(escolhida)
     enviadas.add(escolhida)
+    soltarImagem(escolhida)
     agendar()
     agendarEnvio()
   }

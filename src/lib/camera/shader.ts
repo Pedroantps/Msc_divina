@@ -118,8 +118,9 @@ export function criarCarregadorTextura(anisotropia: number): Carregador<Texture>
   }
 }
 
+/** Solta a textura da GPU e o bitmap, se ainda existir (depois do upload o motor já o fechou). */
 export function descartarTextura(textura: Texture): void {
-  const imagem = textura.image as ImageBitmap | undefined
+  const imagem = textura.image as ImageBitmap | null | undefined
   textura.dispose()
   if (imagem && typeof imagem.close === 'function') imagem.close()
 }

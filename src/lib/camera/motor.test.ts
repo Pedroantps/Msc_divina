@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry, Texture } from 'three'
 import { criarMotor } from './motor'
+import { descartarTextura } from './shader'
 import type { Motor, OpcoesMotor } from './motor'
 import type { EstadoCamera, Vista } from './tipos'
 
@@ -217,6 +218,30 @@ describe('criarMotor', () => {
       motor.destruir()
       rodarOcioso()
       expect(renderer.initTexture).not.toHaveBeenCalledWith(t1)
+    })
+  })
+
+  describe('bitmap após o upload', () => {
+    it('fecha o bitmap e solta a imagem depois do initTexture', async () => {
+      const { motor, renderer, pedido } = montar()
+      motor.definirEstado(estado(0))
+      const close = vi.fn()
+      const tex = new Texture({ width: 4096, height: 2048, close } as unknown as ImageBitmap)
+      pedido(0).resolver(tex)
+      await microtarefas()
+      expect(close).not.toHaveBeenCalled()
+      rodarOcioso()
+      expect(close).toHaveBeenCalledTimes(1)
+      expect(close.mock.invocationCallOrder[0]).toBeGreaterThan(renderer.initTexture.mock.invocationCallOrder[0])
+      expect(tex.image).toBeNull()
+    })
+
+    it('descartarTextura aceita textura sem imagem', () => {
+      const tex = new Texture()
+      tex.image = null
+      const dispose = vi.spyOn(tex, 'dispose')
+      expect(() => descartarTextura(tex)).not.toThrow()
+      expect(dispose).toHaveBeenCalled()
     })
   })
 })
