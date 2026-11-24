@@ -118,6 +118,47 @@ describe('PalcoPanorama', () => {
     expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
   })
 
+  describe('pôster', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('some depois que o canvas fica pronto (após o fade) e volta quando deixa de estar', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      opcoesRecebidas!.aoPronto!(true)
+      expect(poster.hidden).toBe(false)
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
+      opcoesRecebidas!.aoPronto!(false)
+      expect(poster.hidden).toBe(false)
+    })
+
+    it('pronto que se desfaz antes do fade não esconde o pôster', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      opcoesRecebidas!.aoPronto!(true)
+      opcoesRecebidas!.aoPronto!(false)
+      vi.advanceTimersByTime(1000)
+      expect(poster.hidden).toBe(false)
+    })
+
+    it('volta a aparecer quando o motor falha', () => {
+      const { container } = montar()
+      const poster = container.querySelector('img')!
+      const canvas = container.querySelector('canvas')!
+      opcoesRecebidas!.aoPronto!(true)
+      vi.advanceTimersByTime(400)
+      expect(poster.hidden).toBe(true)
+      opcoesRecebidas!.aoFalhar()
+      expect(poster.hidden).toBe(false)
+      expect(canvas).not.toHaveClass('palco-panorama__canvas--pronto')
+    })
+  })
+
   it('redimensiona sem recriar o motor', () => {
     montar()
     motor.redimensionar.mockClear()

@@ -15,6 +15,8 @@ interface PalcoPanoramaProps {
 }
 
 const CLASSE_PRONTO = 'palco-panorama__canvas--pronto'
+/** Duração do fade do canvas (PalcoPanorama.css): o pôster só some depois dele. */
+const FADE_CANVAS = 400
 
 /**
  * Palco WebGL do Percurso: o panorama 360° num canvas controlado pela rolagem.
@@ -47,12 +49,31 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
   useEffect(() => {
     const el = canvas.current!
     const caixa = raiz.current!
+    let timerPoster: ReturnType<typeof setTimeout> | undefined
+
+    // Com o panorama na tela o pôster sai (deixa de ser composto por baixo do canvas);
+    // volta na hora se a textura some ou se o motor falha.
+    const mostrar = (pronto: boolean) => {
+      clearTimeout(timerPoster)
+      el.classList.toggle(CLASSE_PRONTO, pronto)
+      if (!pronto) {
+        if (poster.current) poster.current.hidden = false
+        return
+      }
+      timerPoster = setTimeout(() => {
+        if (poster.current) poster.current.hidden = true
+      }, FADE_CANVAS)
+    }
+
     let vivo: Motor
     try {
       vivo = criarMotor(el, panoramasAtuais.current, {
         dpr: dprAtual.current,
-        aoFalhar: () => aoFalharAtual.current(),
-        aoPronto: (pronto) => el.classList.toggle(CLASSE_PRONTO, pronto),
+        aoFalhar: () => {
+          mostrar(false)
+          aoFalharAtual.current()
+        },
+        aoPronto: mostrar,
       })
     } catch (erro) {
       console.error(erro)
@@ -75,7 +96,7 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
       observador?.disconnect()
       vivo.destruir()
       motor.current = null
-      el.classList.remove(CLASSE_PRONTO)
+      mostrar(false)
     }
   }, [chavePanoramas])
 

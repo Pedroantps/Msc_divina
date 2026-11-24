@@ -1,4 +1,4 @@
-/* Palco WebGL: ocupa o palco inteiro; a foto-pôster fica por baixo até a textura chegar. */
+/* Palco WebGL: ocupa o palco inteiro; a foto-pôster fica por baixo até a textura chegar e some depois do fade. */
 .palco-panorama {
   position: relative;
   width: 100%;
@@ -18,6 +18,11 @@
 
 .palco-panorama__poster {
   object-fit: cover;
+}
+
+/* Escondido depois que o panorama aparece (o display: block acima venceria o [hidden] do navegador). */
+.palco-panorama__poster[hidden] {
+  display: none;
 }
 
 .palco-panorama__canvas {
