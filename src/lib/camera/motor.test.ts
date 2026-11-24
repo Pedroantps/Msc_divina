@@ -220,6 +220,25 @@ describe('criarMotor', () => {
       }
     })
 
+    it('textura que sai da janela antes do ocioso não sobe', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const { motor, renderer, pedido } = montar()
+        motor.definirEstado(estado(0))
+        const t1 = new Texture()
+        const descartar = vi.spyOn(t1, 'dispose')
+        pedido(1).resolver(t1)
+        await microtarefas()
+        motor.definirEstado(estado(5))
+        vi.advanceTimersByTime(120)
+        expect(descartar).toHaveBeenCalled()
+        rodarOcioso()
+        expect(renderer.initTexture).not.toHaveBeenCalledWith(t1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('textura descartada antes do upload não sobe', async () => {
       const { motor, renderer, pedido } = montar()
       motor.definirEstado(estado(0))
