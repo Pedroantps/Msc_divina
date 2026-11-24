@@ -273,6 +273,19 @@ describe('criarMotor', () => {
       expect(pedidosDe().sort((x, y) => x - y)).toEqual([0, 1, 9, 10, 11])
     })
 
+    it('estados da mesma cena (só yaw mudando) não adiam o foco pendente', () => {
+      const { motor, pedidosDe } = montar()
+      motor.definirEstado(estado(3))
+      motor.definirEstado(estado(4))
+      for (let t = 16; t <= 112; t += 16) {
+        vi.advanceTimersByTime(16)
+        motor.definirEstado({ a: { ...vista(4), yaw: t }, b: null, mistura: 0 })
+      }
+      expect(pedidosDe()).not.toContain(5)
+      vi.advanceTimersByTime(120 - 112)
+      expect(pedidosDe()).toContain(5)
+    })
+
     it('voltar à cena focada antes dos 120 ms cancela o foco pendente', () => {
       const { motor, pedidosDe } = montar()
       motor.definirEstado(estado(3))

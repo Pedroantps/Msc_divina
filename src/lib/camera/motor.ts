@@ -148,19 +148,25 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
   /** Cena cuja janela o gerente mantém (null: nada focado ainda, ou liberado). */
   let focada: number | null = null
   let timerFoco: ReturnType<typeof setTimeout> | undefined
+  /** Cena que o timer vai focar; estados da mesma cena (yaw, fov, mistura) não reiniciam a espera. */
+  let alvoPendente: number | null = null
 
   /** Foca na hora no primeiro estado; depois, só quando a cena para de mudar por ESPERA_FOCO. */
   function focar(cena: number) {
+    if (cena === alvoPendente && timerFoco !== undefined) return
     clearTimeout(timerFoco)
     timerFoco = undefined
+    alvoPendente = null
     if (cena === focada) return
     if (focada === null) {
       focada = cena
       gerente.focar(cena)
       return
     }
+    alvoPendente = cena
     timerFoco = setTimeout(() => {
       timerFoco = undefined
+      alvoPendente = null
       focada = cena
       gerente.focar(cena)
     }, ESPERA_FOCO)
@@ -265,6 +271,7 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       quadro = 0
       clearTimeout(timerFoco)
       timerFoco = undefined
+      alvoPendente = null
       focada = null
       estado = null
       gerente.liberar()
