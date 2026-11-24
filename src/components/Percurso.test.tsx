@@ -4,9 +4,41 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Viewer } from '@photo-sphere-viewer/core'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { suportaWebGL } from '../lib/suportaWebGL'
+import { panoramaPara } from '../lib/imagens'
+import { estadoNaRolagem } from '../lib/camera/coreografia'
+import { roteiros } from '../data/roteiro'
 import { areasDoNavio } from '../data/areas'
+import type { Capacidade } from '../lib/camera/tipos'
 import { Percurso } from './Percurso'
 
+const palco = vi.hoisted(() => ({
+  capacidade: 'alta' as 'alta' | 'media' | 'sem3d',
+  definirEstado: vi.fn(),
+  propsPanorama: null as null | { panoramas: string[]; posteres: string[]; dpr: number; aoFalhar: () => void },
+  propsFotos: null as null | { imagens: string[] },
+}))
+
+vi.mock('../hooks/useCapacidade3D', () => ({ useCapacidade3D: () => palco.capacidade }))
+vi.mock('./PalcoPanorama', async () => {
+  const { forwardRef, useImperativeHandle } = await import('react')
+  return {
+    PalcoPanorama: forwardRef(function PalcoPanorama(props: NonNullable<typeof palco.propsPanorama>, ref) {
+      palco.propsPanorama = props
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      return <div data-palco="panorama" />
+    }),
+  }
+})
+vi.mock('./PalcoFotos', async () => {
+  const { forwardRef, useImperativeHandle } = await import('react')
+  return {
+    PalcoFotos: forwardRef(function PalcoFotos(props: NonNullable<typeof palco.propsFotos>, ref) {
+      palco.propsFotos = props
+      useImperativeHandle(ref, () => ({ definirEstado: palco.definirEstado }))
+      return <div data-palco="fotos" />
+    }),
+  }
+})
 vi.mock('../lib/suportaWebGL', () => ({ suportaWebGL: vi.fn(() => true) }))
 vi.mock('@photo-sphere-viewer/core', () => ({ Viewer: vi.fn() }))
 vi.mock('@photo-sphere-viewer/core/index.css', () => ({}))
@@ -32,15 +64,28 @@ function mockMatchMedia(reduzido: boolean) {
 
 interface Obs {
   cb: IntersectionObserverCallback
+  opcoes?: IntersectionObserverInit
   observados: Element[]
 }
 let observers: Obs[] = []
 
+/** Simula o Percurso entrar na folga de 1 tela. */
+function chegarPerto() {
+  const obs = observers.find((o) => o.opcoes?.rootMargin === '100% 0px')!
+  act(() =>
+    obs.cb([{ isIntersecting: true, target: obs.observados[0] } as unknown as IntersectionObserverEntry], {} as IntersectionObserver),
+  )
+}
+
 beforeEach(() => {
   mockMatchMedia(false)
   observers = []
-  window.IntersectionObserver = vi.fn(function (cb: IntersectionObserverCallback) {
-    const obs: Obs = { cb, observados: [] }
+  palco.capacidade = 'alta'
+  palco.propsPanorama = null
+  palco.propsFotos = null
+  palco.definirEstado.mockClear()
+  window.IntersectionObserver = vi.fn(function (cb: IntersectionObserverCallback, opcoes?: IntersectionObserverInit) {
+    const obs: Obs = { cb, opcoes, observados: [] }
     observers.push(obs)
     return {
       observe: (el: Element) => obs.observados.push(el),
@@ -73,7 +118,6 @@ afterEach(() => {
 
 const spa = areasDoNavio.find((a) => a.id === 'aurea-spa')!
 const cabines = areasDoNavio.find((a) => a.id === 'cabines')!
-const imagens = () => Array.from(document.querySelectorAll('img'))
 const paradas = (c: HTMLElement) => Array.from(c.querySelectorAll<HTMLElement>('section.parada'))
 
 describe('estrutura', () => {
@@ -114,129 +158,115 @@ describe('estrutura', () => {
   })
 })
 
-describe('carga preguiçosa das faixas', () => {
-  it('não monta nenhuma imagem antes de o capítulo chegar perto da tela', () => {
-    render(<Percurso areas={areasDoNavio} />)
-    expect(imagens()).toHaveLength(0)
-  })
-
-  it('monta só a faixa das paradas que entram na folga', () => {
-    const { container } = render(<Percurso areas={areasDoNavio} />)
-    const secoes = paradas(container)
-    act(() => {
-      observers[0].cb(
-        [0, 1].map((i) => ({ isIntersecting: true, target: secoes[i] }) as unknown as IntersectionObserverEntry),
-        {} as IntersectionObserver,
-      )
-    })
-    expect(imagens().map((i) => i.getAttribute('src'))).toEqual([areasDoNavio[0].faixa, areasDoNavio[1].faixa])
-  })
-
-  it('observa com folga de 250% e, ao ativar uma parada, monta também a faixa da seguinte', () => {
+describe('palco', () => {
+  const criarGatilho = () => {
     const criar = vi.spyOn(ScrollTrigger, 'create')
+    const r = render(<Percurso areas={areasDoNavio} />)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    return { ...r, cfg }
+  }
+
+  it('não monta palco antes de o capítulo chegar a 1 tela de distância', () => {
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    expect(window.IntersectionObserver).toHaveBeenCalledWith(expect.any(Function), { rootMargin: '250% 0px' })
-    expect(imagens()).toHaveLength(0)
-    const gatilhos = criar.mock.calls.map(([c]) => c).filter((c) => c.start === 'top 10%')
-    act(() => gatilhos[2].onToggle!({ isActive: true } as ScrollTrigger))
-    expect(imagens().map((i) => i.getAttribute('src'))).toEqual([areasDoNavio[2].faixa, areasDoNavio[3].faixa])
-    expect(container.querySelectorAll('.percurso__giro img')).toHaveLength(2)
+    expect(window.IntersectionObserver).toHaveBeenCalledWith(expect.any(Function), { rootMargin: '100% 0px' })
+    expect(container.querySelector('[data-palco]')).toBeNull()
+    chegarPerto()
+    expect(container.querySelector('[data-palco="panorama"]')).not.toBeNull()
   })
 
-  it('a primeira faixa tem prioridade alta', () => {
+  it('capacidade sem3d monta o palco de fotos com as imagens das áreas', () => {
+    palco.capacidade = 'sem3d'
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    act(() => {
-      observers[0].cb(
-        [{ isIntersecting: true, target: paradas(container)[0] } as unknown as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      )
-    })
-    expect(imagens()[0]).toHaveAttribute('fetchpriority', 'high')
+    chegarPerto()
+    expect(container.querySelector('[data-palco="fotos"]')).not.toBeNull()
+    expect(container.querySelector('[data-palco="panorama"]')).toBeNull()
+    expect(palco.propsFotos!.imagens).toEqual(areasDoNavio.map((a) => a.imagem))
   })
 
-  it('sem IntersectionObserver monta todas as faixas', () => {
-    // @ts-expect-error simulando um navegador antigo
-    delete window.IntersectionObserver
+  it.each([
+    ['alta', 2],
+    ['media', 1.5],
+  ] as [Capacidade, number][])('capacidade %s monta o panorama com dpr %s', (cap, dpr) => {
+    palco.capacidade = cap
+    vi.spyOn(window, 'devicePixelRatio', 'get').mockReturnValue(3)
     render(<Percurso areas={areasDoNavio} />)
-    expect(imagens()).toHaveLength(areasDoNavio.length)
+    chegarPerto()
+    expect(palco.propsPanorama!.dpr).toBe(dpr)
+    expect(palco.propsPanorama!.panoramas).toEqual(areasDoNavio.map((a) => panoramaPara(a.panorama!, cap)))
+    expect(palco.propsPanorama!.posteres).toEqual(areasDoNavio.map((a) => a.imagem))
   })
-})
 
-describe('rolagem', () => {
-  it('cria o giro (scrub) e o fade da camada com ScrollTrigger e limpa ao desmontar', () => {
-    const espiao = vi.spyOn(gsap, 'fromTo')
+  it('aoFalhar troca para o palco de fotos sem desmontar os textos', () => {
+    const { container } = render(<Percurso areas={areasDoNavio} />)
+    chegarPerto()
+    const titulo = within(paradas(container)[0]).getByRole('heading', { level: 2 })
+    act(() => palco.propsPanorama!.aoFalhar())
+    expect(container.querySelector('[data-palco="fotos"]')).not.toBeNull()
+    expect(container.querySelector('[data-palco="panorama"]')).toBeNull()
+    expect(within(paradas(container)[0]).getByRole('heading', { level: 2 })).toBe(titulo)
+  })
+
+  it('um único ScrollTrigger com scrub no container das paradas', () => {
+    const { cfg, container } = criarGatilho()
+    expect(cfg.start).toBe('top top')
+    expect(cfg.end).toBe('bottom bottom')
+    expect(cfg.trigger).toBe(container.querySelector('.percurso__paradas'))
+    expect(ScrollTrigger.getAll()).toHaveLength(1)
+  })
+
+  it('onUpdate manda estadoNaRolagem(progress * N) ao palco', () => {
+    const { cfg } = criarGatilho()
+    chegarPerto()
+    palco.definirEstado.mockClear()
+    act(() => cfg.onUpdate!({ progress: 0.5 } as ScrollTrigger))
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.5 * areasDoNavio.length, roteiros))
+  })
+
+  it('aceita roteiros injetados por prop', () => {
+    const outros = roteiros.map((r) => ({ ...r, quadros: r.quadros.map((q) => ({ ...q, yaw: q.yaw + 10 })) }))
+    const criar = vi.spyOn(ScrollTrigger, 'create')
+    render(<Percurso areas={areasDoNavio} roteiros={outros} />)
+    const cfg = criar.mock.calls.map(([c]) => c).find((c) => c.scrub === true)!
+    chegarPerto()
+    palco.definirEstado.mockClear()
+    act(() => cfg.onUpdate!({ progress: 0.3 } as ScrollTrigger))
+    expect(palco.definirEstado).toHaveBeenLastCalledWith(estadoNaRolagem(0.3 * areasDoNavio.length, outros))
+  })
+
+  it('o texto fica ativo só na faixa p 0,15 a 0,70 da parada', () => {
+    const { cfg, container } = criarGatilho()
+    const N = areasDoNavio.length
+    const textos = () => Array.from(container.querySelectorAll('.parada__texto'))
+    const ativos = () => textos().map((t) => t.hasAttribute('data-ativa'))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.05) / N } as ScrollTrigger))
+    expect(ativos().some(Boolean)).toBe(false)
+    act(() => cfg.onUpdate!({ progress: (2 + 0.4) / N } as ScrollTrigger))
+    expect(ativos()).toEqual(textos().map((_, i) => i === 2))
+    act(() => cfg.onUpdate!({ progress: (2 + 0.8) / N } as ScrollTrigger))
+    expect(ativos().some(Boolean)).toBe(false)
+    act(() => cfg.onUpdate!({ progress: (3 + 0.2) / N } as ScrollTrigger))
+    expect(ativos()).toEqual(textos().map((_, i) => i === 3))
+  })
+
+  it('limpa o ScrollTrigger ao desmontar', () => {
     const { unmount } = render(<Percurso areas={areasDoNavio} />)
-    // giro em todas as paradas + fade em todas menos a primeira
-    expect(espiao).toHaveBeenCalledTimes(areasDoNavio.length * 2 - 1)
-    expect(espiao).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ x: 0, scale: 1 }),
-      expect.objectContaining({ scale: 1.08, scrollTrigger: expect.objectContaining({ scrub: true }) }),
-    )
-    expect(espiao).toHaveBeenCalledWith(
-      expect.anything(),
-      { autoAlpha: 0 },
-      expect.objectContaining({ autoAlpha: 1, scrollTrigger: expect.objectContaining({ scrub: true }) }),
-    )
     expect(ScrollTrigger.getAll().length).toBeGreaterThan(0)
     unmount()
     expect(ScrollTrigger.getAll()).toHaveLength(0)
   })
 
-  it('o texto só fica ativo na parada que o ScrollTrigger marca', () => {
-    const criar = vi.spyOn(ScrollTrigger, 'create')
-    const { container } = render(<Percurso areas={areasDoNavio} />)
-    const gatilhos = criar.mock.calls.map(([c]) => c).filter((c) => c.start === 'top 10%')
-    expect(gatilhos).toHaveLength(areasDoNavio.length)
-    const textos = () => Array.from(container.querySelectorAll('.parada__texto'))
-    expect(textos().every((t) => !t.hasAttribute('data-ativa'))).toBe(true)
-
-    act(() => gatilhos[2].onToggle!({ isActive: true } as ScrollTrigger))
-    expect(textos().map((t) => t.hasAttribute('data-ativa'))).toEqual(textos().map((_, i) => i === 2))
-
-    act(() => gatilhos[2].onToggle!({ isActive: false } as ScrollTrigger))
-    expect(textos().some((t) => t.hasAttribute('data-ativa'))).toBe(false)
-  })
-
-  it('a última parada gira até o palco soltar e o texto dela some antes disso', () => {
-    const fromTo = vi.spyOn(gsap, 'fromTo')
-    const criar = vi.spyOn(ScrollTrigger, 'create')
-    render(<Percurso areas={areasDoNavio} />)
-    const giros = fromTo.mock.calls
-      .map(([, , v]) => (v as unknown as gsap.TweenVars).scrollTrigger as ScrollTrigger.Vars | undefined)
-      .filter((t) => t && t.scrub === true && t.end !== 'top top')
-    expect(giros).toHaveLength(areasDoNavio.length)
-    expect(giros.slice(0, -1).every((t) => t!.end === 'bottom top')).toBe(true)
-    expect(giros[giros.length - 1]!.end).toBe('bottom bottom')
-    const textos = criar.mock.calls.map(([c]) => c).filter((c) => c.start === 'top 10%')
-    expect(textos.slice(0, -1).every((t) => t.end === 'bottom 30%')).toBe(true)
-    expect(textos[textos.length - 1].end).toBe('bottom bottom')
-  })
-
-  it('o fade não usa gsap.set no autoAlpha da camada anterior: esconde o giro por classe', () => {
-    const set = vi.spyOn(gsap, 'set')
-    const fromTo = vi.spyOn(gsap, 'fromTo')
-    const { container } = render(<Percurso areas={areasDoNavio} />)
-    const fade = fromTo.mock.calls.find(([, de]) => (de as unknown as gsap.TweenVars).autoAlpha === 0)!
-    const gatilho = (fade[2] as unknown as gsap.TweenVars).scrollTrigger as ScrollTrigger.Vars
-    const giros = container.querySelectorAll('.percurso__giro')
-    act(() => gatilho.onLeave!({} as ScrollTrigger))
-    expect(giros[0]).toHaveClass('percurso__giro--oculto')
-    act(() => gatilho.onEnterBack!({} as ScrollTrigger))
-    expect(giros[0]).not.toHaveClass('percurso__giro--oculto')
-    act(() => gatilho.onRefresh!({ progress: 1 } as ScrollTrigger))
-    expect(giros[0]).toHaveClass('percurso__giro--oculto')
-    expect(set).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ autoAlpha: expect.anything() }))
-  })
-
-  it('foco por teclado numa parada fora da tela leva a rolagem até ela', async () => {
+  it('foco por teclado numa parada inativa rola até p 0,4 dela e ativa o texto na hora', () => {
     const rolar = vi.fn()
-    window.HTMLElement.prototype.scrollIntoView = rolar
+    vi.spyOn(window, 'scrollTo').mockImplementation(rolar)
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(500)
     const { container } = render(<Percurso areas={areasDoNavio} />)
-    const botao = within(paradas(container)[3]).getByRole('button', { name: 'Ver em 360°' })
+    const secao = paradas(container)[3]
+    vi.spyOn(secao, 'getBoundingClientRect').mockReturnValue({ top: 1000, height: 800 } as DOMRect)
+    const botao = within(secao).getByRole('button', { name: 'Ver em 360°' })
     act(() => botao.focus())
     expect(rolar).toHaveBeenCalledTimes(1)
-    expect(rolar.mock.contexts[0]).toBe(paradas(container)[3])
+    expect(rolar).toHaveBeenCalledWith({ top: 1500 + 0.4 * 800, behavior: 'auto' })
+    expect(secao.querySelector('.parada__texto')).toHaveAttribute('data-ativa', 'true')
   })
 })
 
@@ -299,6 +329,7 @@ describe('movimento reduzido', () => {
     const { container } = render(<Percurso areas={areasDoNavio} />)
     expect(container.querySelector('.percurso')).toHaveAttribute('data-estatico', 'true')
     expect(container.querySelector('.percurso__palco')).toBeNull()
+    expect(container.querySelector('[data-palco]')).toBeNull()
     expect(fromTo).not.toHaveBeenCalled()
     expect(ScrollTrigger.getAll()).toHaveLength(0)
     expect(observers).toHaveLength(0)
