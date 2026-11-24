@@ -316,4 +316,28 @@ describe('criarMotor', () => {
     motor.definirDpr(2)
     expect(quadros.size).toBe(0)
   })
+
+  describe('aoPronto', () => {
+    const avanco = (mistura: number): EstadoCamera => ({ a: vista(0, 60), b: vista(1, 105), mistura })
+
+    it('fica pronto com a textura de b quando a mistura é maior que 0', async () => {
+      const { motor, pedido, aoPronto } = montar()
+      motor.definirEstado(avanco(0.5))
+      pedido(1).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarQuadros()
+      expect(aoPronto).toHaveBeenLastCalledWith(true)
+    })
+
+    it('com mistura 0, só a textura de b não basta', async () => {
+      const { motor, pedido, aoPronto } = montar()
+      motor.definirEstado(avanco(0))
+      pedido(1).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarQuadros()
+      expect(aoPronto).not.toHaveBeenCalledWith(true)
+    })
+  })
 })

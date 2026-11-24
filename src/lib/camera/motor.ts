@@ -19,7 +19,7 @@ export interface OpcoesMotor {
   dpr: number
   /** Contexto WebGL perdido: quem usa o motor troca para o palco de fotos. */
   aoFalhar: () => void
-  /** Avisa se a textura da cena atual (`a`) está na tela; enquanto não estiver, vale o pôster. */
+  /** Avisa se há panorama na tela (`a`, ou `b` com mistura > 0); enquanto não houver, vale o pôster. */
   aoPronto?: (pronto: boolean) => void
   /** Carregador das texturas; o padrão é `fetch` + `createImageBitmap` (injetável nos testes). */
   carregador?: Carregador<Texture>
@@ -168,7 +168,8 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       prepararCamada(camadaB, b, texB, mistura)
       renderer.render(camadaB.cena, camadaB.camera)
     }
-    const agora = texA !== undefined
+    // Visível se alguma camada desenhou algo: `a`, ou `b` durante o avanço.
+    const agora = texA !== undefined || (texB !== undefined && mistura > 0)
     if (agora !== pronto) {
       pronto = agora
       opcoes.aoPronto?.(agora)
