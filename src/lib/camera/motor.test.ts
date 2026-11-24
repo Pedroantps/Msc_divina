@@ -244,4 +244,63 @@ describe('criarMotor', () => {
       expect(dispose).toHaveBeenCalled()
     })
   })
+
+  describe('foco das texturas', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('o primeiro estado foca na hora', () => {
+      const { motor, pedidosDe } = montar()
+      motor.definirEstado(estado(4))
+      expect(pedidosDe().sort((x, y) => x - y)).toEqual([3, 4, 5])
+    })
+
+    it('salto rápido 0→10 em menos de 120 ms pede só 0 e depois 10±1', () => {
+      const { motor, pedidosDe } = montar()
+      motor.definirEstado(estado(0))
+      for (let cena = 1; cena <= 10; cena++) {
+        vi.advanceTimersByTime(10)
+        motor.definirEstado(estado(cena))
+      }
+      expect(pedidosDe().sort((x, y) => x - y)).toEqual([0, 1])
+      vi.advanceTimersByTime(119)
+      expect(pedidosDe()).toHaveLength(2)
+      vi.advanceTimersByTime(1)
+      expect(pedidosDe().sort((x, y) => x - y)).toEqual([0, 1, 9, 10, 11])
+    })
+
+    it('voltar à cena focada antes dos 120 ms cancela o foco pendente', () => {
+      const { motor, pedidosDe } = montar()
+      motor.definirEstado(estado(3))
+      motor.definirEstado(estado(8))
+      motor.definirEstado(estado(3))
+      vi.advanceTimersByTime(500)
+      expect(pedidosDe().sort((x, y) => x - y)).toEqual([2, 3, 4])
+    })
+
+    it('liberar() descarta tudo e o definirEstado seguinte recarrega', async () => {
+      const descartar = vi.spyOn(Texture.prototype, 'dispose')
+      const { motor, pedido, pedidosDe, carregador, aoPronto } = montar()
+      motor.definirEstado(estado(0))
+      pedido(0).resolver(new Texture())
+      await microtarefas()
+      rodarOcioso()
+      rodarQuadros()
+      expect(aoPronto).toHaveBeenLastCalledWith(true)
+
+      motor.liberar()
+      expect(descartar).toHaveBeenCalledTimes(1)
+      expect(pedido(1).sinal.aborted).toBe(true)
+      expect(aoPronto).toHaveBeenLastCalledWith(false)
+
+      carregador.mockClear()
+      motor.definirEstado(estado(0))
+      expect(pedidosDe().sort((x, y) => x - y)).toEqual([0, 1])
+      expect(quadros.size).toBe(1)
+    })
+  })
 })

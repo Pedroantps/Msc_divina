@@ -18,7 +18,7 @@ const CLASSE_PRONTO = 'palco-panorama__canvas--pronto'
 
 /**
  * Palco WebGL do Percurso: o panorama 360° num canvas controlado pela rolagem.
- * A API é imperativa (`ref.definirEstado`) e nada passa pelo estado do React a cada quadro.
+ * A API é imperativa (`ref.definirEstado`, `ref.liberar`) e nada passa pelo estado do React a cada quadro.
  */
 export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(function PalcoPanorama(
   { panoramas, posteres, dpr, aoFalhar },
@@ -88,6 +88,9 @@ export const PalcoPanorama = forwardRef<ControlePalco, PalcoPanoramaProps>(funct
           if (poster.current && src && poster.current.getAttribute('src') !== src) poster.current.src = src
         }
         motor.current?.definirEstado(e)
+      },
+      liberar() {
+        motor.current?.liberar()
       },
     }),
     [],

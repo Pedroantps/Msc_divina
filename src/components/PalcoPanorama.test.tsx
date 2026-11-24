@@ -9,7 +9,7 @@ import { PalcoPanorama } from './PalcoPanorama'
 vi.mock('../lib/camera/motor', () => ({ criarMotor: vi.fn() }))
 
 const criarMotorMock = vi.mocked(criarMotor)
-const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), destruir: vi.fn() }
+const motor = { definirEstado: vi.fn(), redimensionar: vi.fn(), liberar: vi.fn(), destruir: vi.fn() }
 let opcoesRecebidas: OpcoesMotor | undefined
 
 /** ResizeObserver falso: guarda o callback para o teste disparar. */
@@ -71,6 +71,13 @@ describe('PalcoPanorama', () => {
     const e = estado(1)
     ref.current!.definirEstado(e)
     expect(motor.definirEstado).toHaveBeenCalledWith(e)
+  })
+
+  it('ref.liberar() solta as texturas do motor sem destruí-lo', () => {
+    const { ref } = montar()
+    ref.current!.liberar!()
+    expect(motor.liberar).toHaveBeenCalledTimes(1)
+    expect(motor.destruir).not.toHaveBeenCalled()
   })
 
   it('mostra o pôster da cena atual', () => {

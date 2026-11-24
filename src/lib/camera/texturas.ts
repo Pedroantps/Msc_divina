@@ -51,6 +51,11 @@ export class GerenteTexturas<T> {
     }
   }
 
+  /** Solta tudo (capítulo fora da tela), sem destruir: o próximo `focar` recarrega a janela. */
+  liberar(): void {
+    for (const [i, entrada] of this.entradas) this.soltar(i, entrada)
+  }
+
   destruir(): void {
     this.destruido = true
     for (const [i, entrada] of this.entradas) this.soltar(i, entrada)

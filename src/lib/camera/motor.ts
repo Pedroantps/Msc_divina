@@ -8,6 +8,8 @@ import type { EstadoCamera, Vista } from './tipos'
 export interface Motor {
   definirEstado(e: EstadoCamera): void
   redimensionar(l: number, a: number): void
+  /** Solta as texturas (capítulo fora da tela); o próximo definirEstado recarrega. */
+  liberar(): void
   destruir(): void
 }
 
@@ -73,6 +75,9 @@ function soltarImagem(textura: Texture): void {
   textura.image = null
 }
 
+/** Tempo que a cena precisa ficar estável antes de trocar a janela de texturas (salto por âncora). */
+const ESPERA_FOCO = 120
+
 function iguais(x: Vista | null, y: Vista | null): boolean {
   if (x === null || y === null) return x === y
   return x.cena === y.cena && x.yaw === y.yaw && x.pitch === y.pitch && x.fov === y.fov
@@ -124,6 +129,26 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
   let quadro = 0
   let pronto: boolean | null = null
   let perdido = false
+  /** Cena cuja janela o gerente mantém (null: nada focado ainda, ou liberado). */
+  let focada: number | null = null
+  let timerFoco: ReturnType<typeof setTimeout> | undefined
+
+  /** Foca na hora no primeiro estado; depois, só quando a cena para de mudar por ESPERA_FOCO. */
+  function focar(cena: number) {
+    clearTimeout(timerFoco)
+    timerFoco = undefined
+    if (cena === focada) return
+    if (focada === null) {
+      focada = cena
+      gerente.focar(cena)
+      return
+    }
+    timerFoco = setTimeout(() => {
+      timerFoco = undefined
+      focada = cena
+      gerente.focar(cena)
+    }, ESPERA_FOCO)
+  }
 
   function desenhar() {
     quadro = 0
@@ -199,7 +224,7 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       if (estado && estado.mistura === e.mistura && iguais(estado.a, e.a) && iguais(estado.b, e.b)) return
       // Cópia: quem chama pode reaproveitar o objeto a cada quadro de rolagem.
       estado = { a: { ...e.a }, b: e.b ? { ...e.b } : null, mistura: e.mistura }
-      gerente.focar(e.a.cena)
+      focar(e.a.cena)
       agendar()
     },
     redimensionar(l, a) {
@@ -211,9 +236,23 @@ export function criarMotor(canvas: HTMLCanvasElement, urls: string[], opcoes: Op
       }
       agendar()
     },
+    liberar() {
+      if (quadro) cancelAnimationFrame(quadro)
+      quadro = 0
+      clearTimeout(timerFoco)
+      timerFoco = undefined
+      focada = null
+      estado = null
+      gerente.liberar()
+      if (pronto !== false) {
+        pronto = false
+        opcoes.aoPronto?.(false)
+      }
+    },
     destruir() {
       if (quadro) cancelAnimationFrame(quadro)
       quadro = 0
+      clearTimeout(timerFoco)
       cancelarEnvio?.()
       cancelarEnvio = null
       canvas.removeEventListener('webglcontextlost', aoPerder)
