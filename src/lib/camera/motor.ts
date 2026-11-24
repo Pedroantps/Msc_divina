@@ -77,10 +77,13 @@ function prepararCamada(c: Camada, vista: Vista, textura: Texture, opacidade: nu
   ;(u.uFrente.value as Vector3).copy(frente)
 }
 
+/** Prazo do upload ocioso: numa rolagem sem pausa a textura sobe mesmo assim. */
+const PRAZO_OCIOSO = 500
+
 /** Roda `fn` quando a thread principal estiver ociosa (ou no próximo ciclo). Devolve o cancelamento. */
 function quandoOcioso(fn: () => void): () => void {
   if (typeof requestIdleCallback === 'function') {
-    const id = requestIdleCallback(() => fn())
+    const id = requestIdleCallback(() => fn(), { timeout: PRAZO_OCIOSO })
     return () => cancelIdleCallback(id)
   }
   const id = setTimeout(fn, 0)

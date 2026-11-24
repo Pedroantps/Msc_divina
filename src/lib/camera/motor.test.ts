@@ -41,6 +41,7 @@ function rodarQuadros() {
 
 /** Fila manual de requestIdleCallback. */
 let ociosos: Map<number, IdleRequestCallback>
+let opcoesOcioso: (IdleRequestOptions | undefined)[]
 let proximoOcioso: number
 function rodarOcioso() {
   const fila = [...ociosos.values()]
@@ -95,7 +96,9 @@ beforeEach(() => {
   })
   ociosos = new Map()
   proximoOcioso = 1
-  vi.stubGlobal('requestIdleCallback', (fn: IdleRequestCallback) => {
+  opcoesOcioso = []
+  vi.stubGlobal('requestIdleCallback', (fn: IdleRequestCallback, opcoes?: IdleRequestOptions) => {
+    opcoesOcioso.push(opcoes)
     const id = proximoOcioso++
     ociosos.set(id, fn)
     return id
@@ -176,6 +179,14 @@ describe('criarMotor', () => {
       expect(vistas).toContain(tex)
       const primeiroRender = renderer.render.mock.invocationCallOrder[vistas.indexOf(tex)]
       expect(renderer.initTexture.mock.invocationCallOrder[0]).toBeLessThan(primeiroRender)
+    })
+
+    it('o upload ocioso tem prazo de 500 ms', async () => {
+      const { motor, pedido } = montar()
+      motor.definirEstado(estado(0))
+      pedido(0).resolver(new Texture())
+      await microtarefas()
+      expect(opcoesOcioso).toEqual([{ timeout: 500 }])
     })
 
     it('envia uma textura por vez, a da cena atual primeiro', async () => {
